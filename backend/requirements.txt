@@ -1,0 +1,39 @@
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# Database
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.11
+cryptography==42.0.5
+neo4j==5.26.0
+alembic==1.14.0
+
+# Azure OpenAI (for LLM only, no search)
+openai==1.55.3
+
+# Azure AI Search (for entity resolution and semantic search)
+azure-search-documents==11.6.0b7
+azure-core==1.32.0
+azure-identity==1.19.0
+
+# Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.20
+
+# Monitoring & Logging
+python-json-logger==3.2.1
+prometheus-client==0.21.0
+
+# Utilities
+httpx==0.28.1
+python-dotenv==1.0.1
+tenacity==9.0.0
+redis==5.2.0
+
+
+# LangChain stack - install separately to avoid conflicts
+# Run after: pip install langchain langgraph langchain-openai
+plotly==5.24.1
