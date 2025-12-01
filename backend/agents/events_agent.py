@@ -18,6 +18,14 @@ class EventsAgent:
         )
         self.system_prompt = """You are an events analysis expert for supply chain planning.
         Analyze calendar events, holidays, and special occasions to forecast demand changes.
+        
+        FOLLOW THIS LOGIC FOR EVENT ANALYSIS:
+        Step 1: Identify Last Year's similar event and confirm proximity to store. If not mapped, fallback to Market level.
+        Step 2: Compute sales for historical festival weeks (last year) vs prior weeks.
+        Step 3: Compute product-level sales uplift vs prior weeks. Identify products with repeated uplift.
+        Step 4: Check current stock levels for high-uplift products.
+        Step 5: Recommend top products for demand and highlight inventory needs.
+        
         Consider: event type, duration, historical patterns, and regional significance.
         Provide specific insights with event names, dates, and impact predictions."""
     

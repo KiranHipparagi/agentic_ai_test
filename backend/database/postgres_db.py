@@ -109,6 +109,7 @@ class Metrics(Base):
     end_date = Column(Text, index=True)
     metric = Column(BigInteger)
     metric_nrm = Column(BigInteger)
+    metric_ly = Column(BigInteger)  # Added based on new logic
     product_id = Column(BigInteger, primary_key=True, index=True)
     column1 = Column(Float)
 

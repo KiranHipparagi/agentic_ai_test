@@ -198,10 +198,11 @@ class ContextResolver:
         # Database schema (dynamic based on query needs)
         prompt_parts.append("\nAvailable Database Tables:")
         prompt_parts.append("""
-- metrics (product, location, end_date, metric, metric_nrm, product_id) -- SALES DATA
-  * 'metric' column contains sales values (use SUM(metric) for total sales)
-  * 'metric_nrm' column contains normalized sales
-  * DO NOT filter by metric='sales' - metric IS the sales number!
+- metrics (product, location, end_date, metric, metric_nrm, metric_ly, product_id) -- SALES DATA
+  * 'metric' = WDD Metric (Weather Driven Demand)
+  * 'metric_nrm' = Normal Metric
+  * 'metric_ly' = Last Year Metric (New addition)
+  * DO NOT filter by metric='sales' - metric IS the value!
   
 - inventory (store_id, product_id, end_date, begin_on_hand_units, received_units, 
              sales_units, end_on_hand_units, base_stock_units, days_of_supply_end, stock_status)
@@ -216,13 +217,25 @@ class ContextResolver:
 - phier (product_id, dept, category, product, unit_price, uom, storage)
 
 - cal (year, quarter, month, week, end_date)
+
+NEW FORMULAS (Apply these logic):
+1. Short Term Planning (< 4 weeks): Use WDD vs Normal
+   Formula: (SUM(metric) - SUM(metric_nrm)) / NULLIF(SUM(metric_nrm), 0)
+2. Long Term Planning (> 4 weeks) & Historical: Use WDD vs LY
+   Formula: (SUM(metric) - SUM(metric_ly)) / NULLIF(SUM(metric_ly), 0)
+
+SEASONS DEFINITION:
+- Spring: Feb, Mar, Apr
+- Summer: May, Jun, Jul
+- Fall: Aug, Sep, Oct
+- Winter: Nov, Dec, Jan
 """)
         
         # SQL generation instructions
         prompt_parts.append("""
 IMPORTANT SQL GENERATION RULES:
 1. Use PostgreSQL syntax (LIMIT not TOP, || for concat)
-2. For sales data, query the 'metrics' table and use SUM(metric) or SUM(metric_nrm)
+2. For sales data, query the 'metrics' table and use SUM(metric), SUM(metric_nrm), or SUM(metric_ly) based on the formulas above.
 3. Join metrics with locdim on location field
 4. Join metrics with phier on product_id
 5. Filter using the Product IDs and Store IDs provided above
