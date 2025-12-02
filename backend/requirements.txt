@@ -7,7 +7,7 @@ pydantic-settings==2.6.1
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.11
 cryptography==42.0.5
-neo4j==5.26.0
+gremlinpython==3.7.1
 alembic==1.14.0
 
 # Azure OpenAI (for LLM only, no search)

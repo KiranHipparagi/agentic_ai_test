@@ -32,11 +32,13 @@ class Settings(BaseSettings):
     def DATABASE_URL(self) -> str:
         return f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
     
-    # Neo4j (Optional - can be disabled)
-    NEO4J_URI: str
-    NEO4J_USER: str
-    NEO4J_PASSWORD: str
-    NEO4J_ENABLED: bool = False
+    # Cosmos DB Gremlin API Configuration
+    COSMOS_ENDPOINT: str = "u7zxunxhadcos001.gremlin.cosmos.azure.com"
+    COSMOS_KEY: str
+    COSMOS_DATABASE: str = "supply-chain-kg"
+    COSMOS_GRAPH: str = "knowledge-graph"
+    COSMOS_PORT: int = 443
+    GREMLIN_ENABLED: bool = True
     
     # Azure OpenAI (Main LLM for chat and SQL generation)
     OPENAI_ENDPOINT: str

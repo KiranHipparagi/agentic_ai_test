@@ -2,7 +2,7 @@ from typing import Dict, Any, List
 from openai import AzureOpenAI
 from core.config import settings
 from core.logger import logger
-from database.neo4j_db import neo4j_conn
+from database.gremlin_db import gremlin_conn
 
 
 class LocationAgent:
@@ -21,17 +21,17 @@ class LocationAgent:
     def analyze(self, query: str, location_id: str) -> Dict[str, Any]:
         """Analyze location-specific factors"""
         try:
-            # Query Neo4j for location relationships
+            # Query Gremlin for location relationships
             location_data = []
-            if neo4j_conn.ensure_connected():
-                location_data = neo4j_conn.query_supply_chain_impact("", location_id)
+            if gremlin_conn.ensure_connected():
+                location_data = gremlin_conn.query_supply_chain_impact("", location_id)
             else:
-                logger.warning("Neo4j unavailable - using limited location analysis")
+                logger.warning("Gremlin unavailable - using limited location analysis")
             
             context = self._build_location_context(location_data)
             
             response = self.client.chat.completions.create(
-                model=settings.AZURE_OPENAI_DEPLOYMENT,
+                model=settings.OPENAI_MODEL_NAME,
                 messages=[
                     {"role": "system", "content": self.system_prompt},
                     {"role": "user", "content": f"Query: {query}\n\nLocation Context:\n{context}"}
@@ -45,7 +45,7 @@ class LocationAgent:
                 "analysis": response.choices[0].message.content,
                 "location_data": location_data,
                 "regional_factors": self._extract_factors(location_data),
-                "neo4j_available": neo4j_conn._connected
+                "graph_available": gremlin_conn._connected
             }
         except Exception as e:
             logger.error(f"Location analysis failed: {e}")

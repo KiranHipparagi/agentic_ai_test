@@ -1,23 +1,23 @@
-"""Context Resolver Service - Combines Azure Search entity resolution with Neo4j graph expansion"""
+"""Context Resolver Service - Combines Azure Search entity resolution with Cosmos DB Gremlin graph expansion"""
 from typing import Dict, Any, List, Optional
 from database.azure_search import azure_search
-from database.neo4j_db import Neo4jConnection
+from database.gremlin_db import GremlinConnection
 from core.logger import logger
 
 
 class ContextResolver:
     """
-    Hybrid context resolution using Azure AI Search + Neo4j Knowledge Graph
+    Hybrid context resolution using Azure AI Search + Cosmos DB Gremlin Knowledge Graph
     
     Workflow:
     1. Azure Search: Resolve vague terms to exact IDs (e.g., "Pepsi" → product_id)
-    2. Neo4j Graph: Expand context via relationships (e.g., find all products in same category)
+    2. Gremlin Graph: Expand context via relationships (e.g., find all products in same category)
     3. Return enriched context for SQL generation
     """
     
     def __init__(self):
         self.search = azure_search
-        self.graph = Neo4jConnection()
+        self.graph = GremlinConnection()
     
     def resolve_query_context(self, user_query: str) -> Dict[str, Any]:
         """

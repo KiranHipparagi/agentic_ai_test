@@ -32,8 +32,8 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("🛑 Shutting down Plan IQ Platform...")
-    from database.neo4j_db import neo4j_conn
-    neo4j_conn.close()
+    from database.gremlin_db import gremlin_conn
+    gremlin_conn.close()
     logger.info("✅ Cleanup completed")
 
 
