@@ -22,7 +22,7 @@ Base = declarative_base()
 
 # Database Models matching your PostgreSQL schema
 class Calendar(Base):
-    __tablename__ = "cal"
+    __tablename__ = "calendar"
     
     year = Column(Integer)
     quarter = Column(Integer)
@@ -34,7 +34,7 @@ class Calendar(Base):
 
 class ProductHierarchy(Base):
     """Product hierarchy table"""
-    __tablename__ = "phier"
+    __tablename__ = "product_hierarchy"
     
     product_id = Column(Integer, primary_key=True, index=True)
     dept = Column(String(255))
@@ -50,7 +50,7 @@ class ProductHierarchy(Base):
 
 class LocationDimension(Base):
     """Location dimension table"""
-    __tablename__ = "locdim"
+    __tablename__ = "location"
     
     location = Column(String(255), primary_key=True, index=True)
     region = Column(String(255), index=True)
@@ -75,7 +75,7 @@ class EventsData(Base):
 
 class WeatherData(Base):
     """Weather data table"""
-    __tablename__ = "weeklyweather"
+    __tablename__ = "weekly_weather"
     
     week_end_date = Column(Date, primary_key=True, index=True)
     store_id = Column(String(255), primary_key=True, index=True)
@@ -93,7 +93,7 @@ class WeatherData(Base):
 
 class InventoryData(Base):
     """Inventory data table"""
-    __tablename__ = "salesinventory"
+    __tablename__ = "inventory"
     
     store_id = Column(String(255), primary_key=True, index=True)
     product_id = Column(Integer, primary_key=True, index=True)

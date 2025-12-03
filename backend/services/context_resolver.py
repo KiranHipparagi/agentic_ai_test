@@ -266,35 +266,35 @@ class ContextResolver:
   * 'metric_ly' = Last Year Metric
   * DO NOT filter by metric='sales' - metric IS the sales value!
   
-- salesinventory (store_id, product_id, end_date, begin_on_hand_units, received_units, 
-                  sales_units, end_on_hand_units, base_stock_units, days_of_supply_end, stock_status)
+- inventory (store_id, product_id, end_date, begin_on_hand_units, received_units, 
+            sales_units, end_on_hand_units, base_stock_units, days_of_supply_end, stock_status)
   * end_on_hand_units = INTEGER (current stock level)
   * days_of_supply_end = NUMERIC (how many days current stock will last)
   * stock_status = VARCHAR ('Understock', 'Optimal', 'Overstock')
   
-- weeklyweather (week_end_date, store_id, avg_temp_f, temp_anom_f, tmax_f, tmin_f, 
-                 precip_in, precip_anom_in, heatwave_flag, cold_spell_flag, heavy_rain_flag, snow_flag)
+- weekly_weather (week_end_date, store_id, avg_temp_f, temp_anom_f, tmax_f, tmin_f, 
+                  precip_in, precip_anom_in, heatwave_flag, cold_spell_flag, heavy_rain_flag, snow_flag)
   * week_end_date = DATE (not TIMESTAMP)
-  * store_id links to locdim.location
+  * store_id links to location.location
   * precip_anom_in is VARCHAR (string) field, not numeric
   
 - events (event, event_type, event_date, store_id, region, market, state)
   * event = Event name
   * event_type = Type of event (e.g., 'National Holiday')
   * event_date = DATE (not TIMESTAMP)
-  * store_id links to locdim.location
+  * store_id links to location.location
 
-- locdim (location, region, market, state, latitude, longitude)
+- location (location, region, market, state, latitude, longitude)
   * location = Store ID (primary key)
   * region, market, state = Location hierarchy
 
-- phier (product_id, dept, category, product, min_period, max_period, period_metric, storage, uom, unit_price)
+- product_hierarchy (product_id, dept, category, product, min_period, max_period, period_metric, storage, uom, unit_price)
   * product_id = Numeric product identifier
   * product = Product name
-  * category = Product category (e.g., 'QSR', 'Beverages')
+  * category = Product category (e.g., 'QSR', 'Beverages', 'Perishable')
   * dept = Department (e.g., 'Fast Food', 'Grocery')
 
-- cal (year, quarter, month, week, end_date, season)
+- calendar (year, quarter, month, week, end_date, season)
   * week = Primary key
   * end_date = DATE (not TIMESTAMP)
   * season = Spring, Summer, Fall, Winter
@@ -317,11 +317,11 @@ SEASONS DEFINITION:
 IMPORTANT SQL GENERATION RULES:
 1. Use PostgreSQL syntax (LIMIT not TOP, || for concat, CAST for type conversion)
 2. For sales/metrics data: Query 'metrics' table, use SUM(metric), SUM(metric_nrm), or SUM(metric_ly)
-3. Join 'metrics' with 'locdim' using: metrics.location = locdim.location
-4. Join 'metrics' with 'phier' using: metrics.product = phier.product
-5. Join 'salesinventory' with 'locdim' using: salesinventory.store_id = locdim.location
-6. Join 'weeklyweather' with 'locdim' using: weeklyweather.store_id = locdim.location
-7. Join 'events' with 'locdim' using: events.store_id = locdim.location
+3. Join 'metrics' with 'location' using: metrics.location = location.location
+4. Join 'metrics' with 'product_hierarchy' using: metrics.product = product_hierarchy.product
+5. Join 'inventory' with 'location' using: inventory.store_id = location.location
+6. Join 'weekly_weather' with 'location' using: weekly_weather.store_id = location.location
+7. Join 'events' with 'location' using: events.store_id = location.location
 8. Filter using the Product IDs and Store IDs provided above
 9. Include descriptive columns (product names, store names, states) in results
 10. Use appropriate aggregations (SUM, AVG, COUNT) with GROUP BY
@@ -331,8 +331,11 @@ IMPORTANT SQL GENERATION RULES:
 14. Return ONLY the SQL query, no explanation, no markdown formatting
 
 CRITICAL TABLE NAMES (Use these exact names):
-- salesinventory (NOT 'inventory')
-- weeklyweather (NOT 'weather')
+- inventory (NOT 'salesinventory')
+- weekly_weather (NOT 'weeklyweather' or 'weather')
+- location (NOT 'locdim')
+- product_hierarchy (NOT 'phier')
+- calendar (NOT 'cal')
 - All DATE columns are type DATE (not TIMESTAMP) - compare directly with '2024-01-01'
 
 Generate the PostgreSQL SELECT query:
