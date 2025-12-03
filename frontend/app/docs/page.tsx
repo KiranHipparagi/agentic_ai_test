@@ -23,7 +23,8 @@ import {
   Settings,
   Cloud,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Search
 } from "lucide-react";
 import Link from "next/link";
 
@@ -137,8 +138,9 @@ export default function DocumentationPage() {
             <div className="bg-gradient-to-r from-orange-50 to-red-50 border-l-4 border-[#D04A02] p-6 rounded-r-lg mb-8">
               <p className="text-xl text-gray-700 leading-relaxed">
                 <strong>Plan IQ</strong> is an enterprise-grade, AI-powered supply chain intelligence platform. 
-                It leverages a multi-agent GenAI system powered by <strong>Azure OpenAI (GPT-4)</strong> to provide 
-                real-time analytics, demand forecasting, weather impact analysis, and actionable insights for supply chain management.
+                It leverages a <strong>Hybrid Agentic RAG</strong> architecture powered by <strong>Azure OpenAI (GPT-4)</strong>, 
+                <strong>Azure AI Search</strong>, and <strong>Gremlin Knowledge Graph</strong> to provide 
+                real-time analytics, demand forecasting, and actionable insights.
               </p>
             </div>
             
@@ -146,33 +148,33 @@ export default function DocumentationPage() {
               <div className="p-6 bg-orange-50 rounded-xl border border-orange-200 hover:shadow-lg transition-shadow">
                 <Cpu className="w-10 h-10 text-[#D04A02] mb-4" />
                 <h3 className="font-bold text-lg mb-2">Multi-Agent AI System</h3>
-                <p className="text-sm text-gray-600 mb-3">5 specialized agents orchestrated by LangGraph for intelligent query processing.</p>
+                <p className="text-sm text-gray-600 mb-3">Orchestrated by LangGraph and exposed via <strong>Model Context Protocol (MCP)</strong>.</p>
                 <ul className="text-xs text-gray-600 space-y-1">
-                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-green-600" />Database Agent - SQL generation</li>
-                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-green-600" />Visualization Agent - Chart generation</li>
-                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-green-600" />Weather, Events, Inventory Agents</li>
+                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-green-600" />MCP Server Integration</li>
+                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-green-600" />LangGraph Orchestration</li>
+                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-green-600" />5 Specialized Agents</li>
                 </ul>
               </div>
               
               <div className="p-6 bg-blue-50 rounded-xl border border-blue-200 hover:shadow-lg transition-shadow">
                 <Database className="w-10 h-10 text-blue-600 mb-4" />
-                <h3 className="font-bold text-lg mb-2">PostgreSQL Database</h3>
-                <p className="text-sm text-gray-600 mb-3">Robust relational database for all transactional and analytical data.</p>
+                <h3 className="font-bold text-lg mb-2">Hybrid Data Layer</h3>
+                <p className="text-sm text-gray-600 mb-3">Combines SQL, Vector Search, and Graph data for complete context.</p>
                 <ul className="text-xs text-gray-600 space-y-1">
-                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-blue-600" />Sales & Revenue tracking</li>
-                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-blue-600" />Inventory management</li>
-                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-blue-600" />Weather & Events data</li>
+                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-blue-600" />PostgreSQL (Transactional)</li>
+                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-blue-600" />Azure AI Search (Vector)</li>
+                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-blue-600" />Gremlin Graph (Relationships)</li>
                 </ul>
               </div>
               
               <div className="p-6 bg-green-50 rounded-xl border border-green-200 hover:shadow-lg transition-shadow">
                 <Zap className="w-10 h-10 text-green-600 mb-4" />
-                <h3 className="font-bold text-lg mb-2">Intelligent SQL Generation</h3>
-                <p className="text-sm text-gray-600 mb-3">Natural language to SQL conversion powered by Azure OpenAI.</p>
+                <h3 className="font-bold text-lg mb-2">Intelligent RAG</h3>
+                <p className="text-sm text-gray-600 mb-3">Context-aware SQL generation using Entity Resolution and Graph Expansion.</p>
                 <ul className="text-xs text-gray-600 space-y-1">
-                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-green-600" />Dynamic query generation</li>
+                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-green-600" />Entity Resolution</li>
+                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-green-600" />Context Expansion</li>
                   <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-green-600" />Schema-aware SQL</li>
-                  <li className="flex items-start gap-2"><CheckCircle className="w-3 h-3 mt-0.5 text-green-600" />Query optimization</li>
                 </ul>
               </div>
             </div>
@@ -222,9 +224,10 @@ export default function DocumentationPage() {
             </h2>
             
             <p className="text-gray-700 mb-6 leading-relaxed">
-              Plan IQ follows a modern microservices-inspired architecture with clear separation of concerns. 
-              The system is built on three main layers: <strong>Presentation (Frontend)</strong>, 
-              <strong>Application Logic (Backend + AI Agents)</strong>, and <strong>Data Layer (PostgreSQL Database)</strong>.
+              Plan IQ follows a modern <strong>Hybrid Agentic RAG</strong> architecture. It combines a traditional web stack 
+              with an advanced AI layer that uses <strong>Model Context Protocol (MCP)</strong> to expose agents to external tools.
+              The data layer is a hybrid of <strong>PostgreSQL</strong> (Structured), <strong>Azure AI Search</strong> (Unstructured/Vector), 
+              and <strong>Gremlin Graph Database</strong> (Relationships).
             </p>
 
             <div className="bg-gray-900 text-gray-300 p-6 rounded-xl font-mono text-sm overflow-x-auto mb-8 shadow-lg">
@@ -240,7 +243,7 @@ export default function DocumentationPage() {
                                     ↕ HTTP/REST API
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                       APPLICATION LOGIC LAYER                                │
-│                        FastAPI Backend (Python)                              │
+│                  FastAPI Backend + MCP Server (Python)                       │
 │  ┌────────────────────────────────────────────────────────────────────┐     │
 │  │                    ORCHESTRATOR AGENT (LangGraph)                  │     │
 │  │  • Intent Classification  • Agent Selection  • Response Synthesis  │     │
@@ -249,36 +252,31 @@ export default function DocumentationPage() {
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐      │
 │  │   Database   │ │Visualization │ │   Weather    │ │   Events     │      │
 │  │    Agent     │ │    Agent     │ │    Agent     │ │    Agent     │      │
-│  │ (SQL Gen)    │ │(Chart Config)│ │ (Impact)     │ │ (Forecast)   │      │
 │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘      │
-│                              ┌──────────────┐                               │
-│                              │  Inventory   │                               │
-│                              │    Agent     │                               │
-│                              │ (Optimization)│                              │
-│                              └──────────────┘                               │
+│          ↕                 ↕                 ↕                 ↕            │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐  │
+│  │  MCP Server  │◄──│     Azure    │   │  Inventory   │   │  Location    │  │
+│  │  Interface   │   │ (OpenAI API) │   │    Agent     │   │    Agent     │  │
+│  └──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────┘
-                                    ↕ SQL Queries
+                                    ↕ Queries
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                            DATA LAYER                                        │
-│                     ┌──────────────────────────────┐                        │
-│                     │       PostgreSQL 14+         │                        │
-│                     │   (Relational Database)      │                        │
-│                     ├──────────────────────────────┤                        │
-│                     │ • Sales Data & Revenue       │                        │
-│                     │ • Inventory & Stock Levels   │                        │
-│                     │ • Weather Data & Forecasts   │                        │
-│                     │ • Events & Holidays          │                        │
-│                     │ • Product Hierarchy          │                        │
-│                     │ • Location Dimensions        │                        │
-│                     │ • Calendar & Time Series     │                        │
-│                     └──────────────────────────────┘                        │
+│                            DATA LAYER (Hybrid)                               │
+│  ┌──────────────────────┐  ┌──────────────────────┐  ┌────────────────────┐ │
+│  │      PostgreSQL      │  │    Azure AI Search   │  │    Gremlin Graph   │ │
+│  │    (Transactional)   │  │   (Vector/Semantic)  │  │   (Relationships)  │ │
+│  ├──────────────────────┤  ├──────────────────────┤  ├────────────────────┤ │
+│  │ • Sales & Revenue    │  │ • Entity Resolution  │  │ • Product Hierarchy│ │
+│  │ • Inventory Levels   │  │ • Product Catalog    │  │ • Supply Chain Map │ │
+│  │ • Weather History    │  │ • Location Index     │  │ • Event Impact     │ │
+│  └──────────────────────┘  └──────────────────────┘  └────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     ↕
                         ┌─────────────────────────┐
                         │    Azure OpenAI GPT-4   │
                         │  • Text Generation      │
                         │  • SQL Generation       │
-                        │  • Natural Language     │
+                        │  • Embeddings           │
                         └─────────────────────────┘
               `}</pre>
             </div>
@@ -293,27 +291,27 @@ export default function DocumentationPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="bg-[#D04A02] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">2</span>
-                    <span>Frontend sends POST request to <code className="bg-gray-100 px-1 rounded">/api/v1/chat</code></span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="bg-[#D04A02] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">3</span>
                     <span>Orchestrator Agent analyzes intent using GPT-4</span>
                   </li>
                   <li className="flex items-start gap-2">
+                    <span className="bg-[#D04A02] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">3</span>
+                    <span><strong>Azure AI Search</strong> resolves entities (e.g., "Coke" → "P-101")</span>
+                  </li>
+                  <li className="flex items-start gap-2">
                     <span className="bg-[#D04A02] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">4</span>
-                    <span>Database Agent generates SQL query dynamically</span>
+                    <span><strong>Gremlin Graph</strong> expands context (e.g., find related products)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="bg-[#D04A02] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">5</span>
-                    <span>Query executed on PostgreSQL, results returned</span>
+                    <span>Database Agent generates context-aware SQL query</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="bg-[#D04A02] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">6</span>
-                    <span>Visualization Agent creates chart configuration</span>
+                    <span>Query executed on PostgreSQL, results returned</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="bg-[#D04A02] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">7</span>
-                    <span>Response with data + chart sent to frontend</span>
+                    <span>Visualization Agent creates chart configuration</span>
                   </li>
                 </ol>
               </div>
@@ -324,15 +322,14 @@ export default function DocumentationPage() {
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">State Machine Workflow:</h4>
                     <div className="bg-gray-50 p-3 rounded border border-gray-200 font-mono text-xs">
-                      classify_intent → route_to_agents → execute_agents → synthesize_response
+                      classify_intent → resolve_entities → expand_context → execute_agents → synthesize_response
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-1">Agent Selection Logic:</h4>
+                    <h4 className="font-semibold text-gray-900 mb-1">Context Resolution:</h4>
                     <ul className="space-y-1 text-xs">
-                      <li>• <strong>Keywords:</strong> "sales", "inventory", "weather", "events"</li>
-                      <li>• <strong>Context:</strong> location_id, product_id parameters</li>
-                      <li>• <strong>Intent:</strong> data_query, visualization, analysis</li>
+                      <li>• <strong>Entity Resolution:</strong> Azure AI Search finds exact IDs from vague terms</li>
+                      <li>• <strong>Graph Expansion:</strong> Gremlin finds relationships (Category, Region)</li>
                     </ul>
                   </div>
                   <div>
@@ -473,6 +470,10 @@ export default function DocumentationPage() {
                       </li>
                       <li className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                        <strong>MCP</strong> - Model Context Protocol
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                         <strong>Azure OpenAI</strong> - GPT-4 & Embeddings
                       </li>
                     </ul>
@@ -528,6 +529,7 @@ export default function DocumentationPage() {
                   <h4 className="font-semibold text-gray-900 mb-2">Azure Services</h4>
                   <ul className="space-y-1 text-gray-700">
                     <li>• Azure OpenAI (GPT-4)</li>
+                    <li>• Azure AI Search (Vector)</li>
                     <li>• Azure Maps</li>
                   </ul>
                 </div>
@@ -535,7 +537,8 @@ export default function DocumentationPage() {
                   <h4 className="font-semibold text-gray-900 mb-2">Database</h4>
                   <ul className="space-y-1 text-gray-700">
                     <li>• PostgreSQL 14+</li>
-                    <li>• Redis (Caching - Optional)</li>
+                    <li>• Gremlin API (Cosmos DB)</li>
+                    <li>• Redis (Caching)</li>
                   </ul>
                 </div>
                 <div>
@@ -769,12 +772,16 @@ export default function DocumentationPage() {
           <section id="database" className="scroll-mt-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center gap-3">
               <Database className="w-8 h-8 text-[#D04A02]" />
-              Database Schema
+              Data Layer Schema
             </h2>
             
             <p className="text-gray-700 mb-6">
-              Plan IQ uses <strong>PostgreSQL</strong> as its primary database for storing all transactional, 
-              analytical, and operational data including sales, inventory, weather, events, and product information.
+              Plan IQ uses a <strong>Hybrid Data Architecture</strong>:
+              <ul className="list-disc ml-6 mt-2 space-y-1">
+                <li><strong>PostgreSQL</strong>: Transactional data (Sales, Inventory)</li>
+                <li><strong>Azure AI Search</strong>: Vector indexes for entity resolution</li>
+                <li><strong>Gremlin Graph</strong>: Knowledge graph for relationships</li>
+              </ul>
             </p>
 
             {/* PostgreSQL Tables */}
@@ -828,6 +835,37 @@ export default function DocumentationPage() {
                       <td className="px-6 py-4 font-medium text-gray-900">Calendar</td>
                       <td className="px-6 py-4">Time dimension for analytics</td>
                       <td className="px-6 py-4 font-mono text-xs">date, week_number, month, quarter, year, is_holiday</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Azure AI Search Indexes */}
+            <div className="mb-8">
+              <h3 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
+                <Search className="w-5 h-5 text-blue-600" />
+                Azure AI Search Indexes
+              </h3>
+              <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg">
+                <table className="min-w-full text-sm text-left text-gray-600">
+                  <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 border-b font-semibold">Index Name</th>
+                      <th className="px-6 py-3 border-b font-semibold">Purpose</th>
+                      <th className="px-6 py-3 border-b font-semibold">Fields</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="bg-white border-b hover:bg-gray-50">
+                      <td className="px-6 py-4 font-medium text-gray-900">planalytics-products</td>
+                      <td className="px-6 py-4">Product entity resolution</td>
+                      <td className="px-6 py-4 font-mono text-xs">id, name, category, description, vector_embedding</td>
+                    </tr>
+                    <tr className="bg-gray-50 border-b hover:bg-gray-100">
+                      <td className="px-6 py-4 font-medium text-gray-900">planalytics-locations</td>
+                      <td className="px-6 py-4">Location entity resolution</td>
+                      <td className="px-6 py-4 font-mono text-xs">id, city, state, region, vector_embedding</td>
                     </tr>
                   </tbody>
                 </table>

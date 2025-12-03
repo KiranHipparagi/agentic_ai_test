@@ -62,7 +62,7 @@ class EnhancedOrchestratorAgent:
             azure_endpoint=settings.OPENAI_ENDPOINT,
             api_key=settings.OPENAI_API_KEY,
             api_version=settings.AZURE_OPENAI_API_VERSION,
-            model=settings.OPENAI_MODEL_NAME.replace("openai.", ""),
+            model=settings.OPENAI_MODEL_NAME,
             temperature=0.7
         )
         
@@ -128,6 +128,10 @@ class EnhancedOrchestratorAgent:
     async def orchestrate(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Main entry point for orchestration"""
         try:
+            print("\n" + "#"*80)
+            print("🚀 ORCHESTRATOR - Multi-Agent Pipeline Started")
+            print("#"*80)
+            print(f"📥 Incoming Query: {query}")
             logger.info(f"🎯 Enhanced Orchestrator received: {query[:100]}")
             
             # Initialize state
@@ -175,6 +179,10 @@ class EnhancedOrchestratorAgent:
             
             needs_viz = final_state.get("visualization")
             
+            print("\n📊 Step 3: Visualization Check")
+            print(f"  Chart Keyword Detected: {has_chart_keyword}")
+            print(f"  Data is Chartable: {is_chartable}")
+            print(f"  Has Data: {has_data}")
             logger.info(f"🔍 Chart check: keyword={has_chart_keyword}, chartable={is_chartable}, has_data={has_data}")
             
             # Force generation if keyword present OR data is chartable (Smart Mode)
@@ -187,9 +195,18 @@ class EnhancedOrchestratorAgent:
                 
                 chart_state = self._generate_chart(final_state)
                 final_state["visualization"] = chart_state.get("visualization")
-                logger.info(f"✅ Forced chart generation complete: ready={chart_state.get('visualization', {}).get('ready')}")
+                logger.info(f"\u2705 Forced chart generation complete: ready={chart_state.get('visualization', {}).get('ready')}")
             
             # Build response
+            print("\n" + "#"*80)
+            print("\u2705 ORCHESTRATOR - Pipeline Completed Successfully")
+            print("#"*80)
+            print(f"\ud83d\udcca Intent: {final_state.get('intent')}")
+            print(f"\ud83d\udcc8 Visualization: {'Yes' if final_state.get('visualization') else 'No'}")
+            print(f"\ud83d\udcdd Row Count: {final_state.get('db_result', {}).get('row_count', 0) if final_state.get('db_result') else 0}")
+            print("#"*80 + "\n")
+            logger.info(f"Query processing complete. Intent: {final_state.get('intent')}")
+            
             response = {
                 "query": query,
                 "answer": final_state.get("final_answer", "I'm here to help!"),
@@ -656,41 +673,93 @@ Provide clear, well-structured insights in a professional business format.
    - Do NOT describe what the chart should look like
    - Focus on insights the chart reveals
 
-Example Response Format:
+Example Response Format (When Data Has Values):
 ```
-## Sales Performance Analysis
+## Weather Impact Analysis
 
-**Executive Summary:** Northeast region outperformed Southeast by 26.3% with $1.2M in total sales versus $950K, driven primarily by higher urban density and seasonal demand patterns.
+**Executive Summary:** Analysis of 15 store locations shows mixed weather-driven demand patterns. Store ST0050 exhibits the highest positive impact (+22%), while Store ST0551 shows the largest decline (-15%). The majority of stores (8 locations) show zero weather impact, indicating stable demand conditions.
 
-### Regional Breakdown
+### Store-Level Weather Impact
 
-| Region | Total Sales | Market Share | YoY Growth |
-|--------|-------------|--------------|------------|
-| Northeast | $1,200,000 | 55.8% | +12.5% |
-| Southeast | $950,000 | 44.2% | +8.2% |
+| Store ID | Region | State | WDD Change | Interpretation |
+|----------|--------|-------|------------|----------------|
+| ST0050 | Northeast | MA | +22.0% | Strong positive weather impact |
+| ST4961 | Mountain | CO | +18.0% | Significant weather-driven uplift |
+| ST0551 | Southeast | FL | -15.0% | Weather suppressing demand |
+| ST0100 | Northeast | MA | 0.0% | No weather impact detected |
 
 ### Key Insights
-- **Urban Advantage**: Northeast benefits from higher population density
-- **Seasonal Impact**: Winter products drive 35% of Northeast sales
-- **Growth Trajectory**: Both regions showing positive YoY trends
+- **High Impact Stores**: 2 stores show significant positive weather effects (>15%)
+- **Negative Impact**: 1 store experiencing weather-driven demand decline
+- **Stable Stores**: 8 stores show zero weather impact (normal demand patterns)
+- **Regional Variation**: Northeast and Mountain regions more weather-sensitive
 
 ### Recommendations
-1. **Southeast Expansion**: Implement targeted marketing in rural areas
-2. **Product Mix**: Introduce year-round product lines in Southeast
-3. **Logistics**: Optimize distribution for dispersed customer base
+1. **ST0050 & ST4961**: Increase inventory 15-20% to capitalize on weather-driven demand surge
+2. **ST0551**: Reduce seasonal inventory, shift marketing to weather-resilient products
+3. **Zero-Impact Stores**: Maintain normal inventory levels, monitor for pattern changes
 
-A visualization comparing the regional performance is provided below.
+A visualization is provided below.
 ```
 
-Remember: ALWAYS use markdown tables for data. Never just list items when you can table them.
+Example Response Format (When ALL Values Are Zero):
+```
+## Weather Impact Analysis
+
+**Executive Summary:** Analysis of 25 products across 10 Northeast stores shows zero weather-driven demand variation for the upcoming month. All products maintain wdd_uplift_ratio of 0.0, indicating demand is expected to match normal patterns with no weather-related deviations.
+
+### Product Weather Impact Summary
+
+| Product | Category | Store Count | WDD Uplift Ratio | Interpretation |
+|---------|----------|-------------|------------------|----------------|
+| Milk | Perishable | 10 stores | 0.0 | No weather impact |
+| Ice Cream | Perishable | 8 stores | 0.0 | No weather impact |
+| Grocery Sector | N/A | 10 stores | 0.0 | No weather impact |
+
+### Key Insights
+- **Stable Demand**: No products show weather-driven uplift for the next month
+- **Normal Planning**: Standard forecasting models apply (no weather adjustments needed)
+- **Consistent Pattern**: All Northeast stores show identical zero-impact trend
+
+### Recommendations
+1. **Inventory Planning**: Use normal demand forecasts (metric_nrm) without weather premiums
+2. **Monitor Changes**: Re-evaluate if weather patterns shift significantly
+3. **Focus on Other Factors**: Prioritize promotions, events, and seasonality over weather
+```
+
+Remember: Zero values ARE valid data insights - they mean "no weather impact" not "no data"!
 """
             
             user_prompt = f"""User Query: {query}
 
-Data and Analysis:
+Database Query Results and Analysis:
 {full_context}
 
-Provide a comprehensive answer with insights and recommendations."""
+**CRITICAL INSTRUCTIONS:**
+1. Use ONLY the data provided above from the database query results
+2. Do NOT invent or hallucinate any store names, locations, numbers, or statistics
+3. If the data contains store IDs (e.g., ST0050), use those EXACT IDs - do NOT convert to city names
+4. Create a markdown table showing the EXACT data from the query results
+5. Base all insights and recommendations ONLY on the actual data provided
+
+**DATA INTERPRETATION RULES:**
+6. IF the database returned rows with values → THAT IS VALID DATA, analyze it!
+7. ONLY say "No data available" if the query returned ZERO rows (empty result set)
+8. If you see values like "wdd_uplift_ratio: 0" or "wdd_vs_normal_pct_change: 0.0":
+   - This means ZERO WEATHER IMPACT (no demand change)
+   - It does NOT mean "no data" - it's a valid business insight!
+   - Interpret: "No significant weather-driven demand change detected"
+9. If you see NULL or missing values in specific columns, mention those specific columns are unavailable
+10. Always analyze the data you DO have, even if some expected changes are zero
+
+**WEATHER-DRIVEN DEMAND (WDD) INTERPRETATION:**
+- **wdd_vs_normal_pct_change** or **wdd_uplift_ratio** = (WDD Sales - Normal Sales) / Normal Sales
+- Positive value (e.g., 0.22) = +22% increase due to weather
+- Negative value (e.g., -0.15) = -15% decrease due to weather  
+- Zero value (0.0) = No weather impact detected (demand matches normal)
+- This is calculated using either metric_nrm (< 4 weeks) or metric_ly (> 4 weeks)
+
+Provide a comprehensive answer with insights and recommendations based STRICTLY on the actual database results."""
             
             response = self.client.chat.completions.create(
                 model=settings.OPENAI_MODEL_NAME,
@@ -698,8 +767,8 @@ Provide a comprehensive answer with insights and recommendations."""
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                temperature=0.6,
-                max_tokens=800
+                temperature=0.3,  # Lower temperature to reduce hallucination
+                max_tokens=1000  # Increased for detailed tables
             )
             
             state["final_answer"] = response.choices[0].message.content

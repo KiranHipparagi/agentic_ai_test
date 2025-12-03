@@ -32,19 +32,18 @@ class Settings(BaseSettings):
     def DATABASE_URL(self) -> str:
         return f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
     
-    # Cosmos DB Gremlin API Configuration
-    COSMOS_ENDPOINT: str = "u7zxunxhadcos001.gremlin.cosmos.azure.com"
+    # Cosmos DB Gremlin API (for knowledge graph)
+    COSMOS_ENDPOINT: str
     COSMOS_KEY: str
-    COSMOS_DATABASE: str = "supply-chain-kg"
-    COSMOS_GRAPH: str = "knowledge-graph"
+    COSMOS_DATABASE: str
+    COSMOS_GRAPH: str
     COSMOS_PORT: int = 443
-    GREMLIN_ENABLED: bool = True
     
     # Azure OpenAI (Main LLM for chat and SQL generation)
     OPENAI_ENDPOINT: str
     OPENAI_API_KEY: str
-    OPENAI_MODEL_NAME: str = "azure.gpt-4.1"
-    OPENAI_MODEL_4_1_NANO: str = "azure.gpt-4.1-nano"
+    OPENAI_MODEL_NAME: str = "openai.gpt-4.1"
+    OPENAI_MODEL_4_1_NANO: str = "openai.gpt-4.1-nano"
     AZURE_OPENAI_API_VERSION: str = "2024-02-01"
     
     # Azure OpenAI Embeddings (for vector search)

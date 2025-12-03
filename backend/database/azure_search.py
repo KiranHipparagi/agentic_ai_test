@@ -3,9 +3,15 @@ from typing import List, Dict, Any, Optional
 from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.models import VectorizedQuery
+from azure.core.pipeline.transport import RequestsTransport
 from openai import AzureOpenAI
 from core.config import settings
 from core.logger import logger
+import urllib3
+import httpx
+
+# Disable SSL warnings (when SSL verification is disabled)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class AzureSearchService:
@@ -27,11 +33,15 @@ class AzureSearchService:
         self.endpoint = settings.AZURE_SEARCH_ENDPOINT
         self.credential = AzureKeyCredential(settings.AZURE_SEARCH_KEY)
         
-        # Initialize OpenAI client for embeddings
+        # Configure transport to disable SSL verification
+        transport = RequestsTransport(connection_verify=False)
+        
+        # Initialize OpenAI client for embeddings with SSL verification disabled
         self.embedding_client = AzureOpenAI(
             api_key=settings.AZURE_OPENAI_API_KEY,
             api_version=settings.AZURE_OPENAI_API_VERSION,
-            azure_endpoint=settings.AZURE_OPENAI_ENDPOINT
+            azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+            http_client=httpx.Client(verify=False)  # Disable SSL verification for embeddings
         )
         
         # Initialize search clients for each index
@@ -41,7 +51,8 @@ class AzureSearchService:
                 self.clients[key] = SearchClient(
                     endpoint=self.endpoint,
                     index_name=index_name,
-                    credential=self.credential
+                    credential=self.credential,
+                    transport=transport  # Disable SSL verification
                 )
                 logger.info(f"✅ Connected to Azure Search index: {index_name}")
             except Exception as e:

@@ -6,7 +6,7 @@ from sqlalchemy import func
 
 
 class GraphBuilderService:
-    """Service for building knowledge graphs in Cosmos DB Gremlin"""
+    """Service for building knowledge graphs using Gremlin (Cosmos DB)"""
     
     def build_supply_chain_graph(self, product_id: str, location_id: str) -> bool:
         """Build complete supply chain graph for product-location pair"""
@@ -43,9 +43,8 @@ class GraphBuilderService:
                 "weather_impact": weather_impact,
                 "event_impact": event_impact
             }
-            
             gremlin_conn.create_supply_chain_graph(graph_data)
-            logger.info(f"Built supply chain graph for {product_id} at {location_id}")
+            logger.info(f"Created supply chain graph for {product_id} at {location_id}")
             return True
             
         except Exception as e:

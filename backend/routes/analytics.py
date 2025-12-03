@@ -36,10 +36,11 @@ async def get_kpis(
             sales_result = sales_query.first()
             
             # Calculate revenue by joining with product prices
+            # Join using product name (metrics.product = phier.product)
             revenue_query = db.query(
                 func.sum(Metrics.metric * ProductHierarchy.unit_price).label('total_revenue')
             ).join(
-                ProductHierarchy, Metrics.product_id == ProductHierarchy.product_id
+                ProductHierarchy, Metrics.product == ProductHierarchy.product
             )
             
             if location_id:
@@ -48,8 +49,9 @@ async def get_kpis(
             revenue_result = revenue_query.first()
             
             # Query inventory for stock levels
+            # Note: end_on_hand_units is TIMESTAMP in schema, use begin_on_hand_units instead
             inventory_query = db.query(
-                func.avg(InventoryData.end_on_hand_units).label('avg_stock')
+                func.avg(InventoryData.begin_on_hand_units).label('avg_stock')
             )
             
             if location_id:
@@ -57,12 +59,9 @@ async def get_kpis(
             
             inventory_result = inventory_query.first()
             
-            # Count low stock items (days_of_supply_end < 7 or stock_status critical)
+            # Count low stock items based on stock_status field
             low_stock = db.query(func.count(InventoryData.store_id)).filter(
-                or_(
-                    InventoryData.days_of_supply_end < 7,
-                    InventoryData.stock_status.in_(['Critical', 'Low'])
-                )
+                InventoryData.stock_status.in_(['Critical', 'Low', 'Out of Stock'])
             )
             
             if location_id:

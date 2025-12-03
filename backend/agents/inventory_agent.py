@@ -32,6 +32,7 @@ class InventoryAgent:
                 
                 if not inventory:
                     return {
+                        "agent": "inventory",
                         "status": "no_data",
                         "message": f"No inventory data for product {product_id} at location {location_id}"
                     }
@@ -49,12 +50,16 @@ class InventoryAgent:
                 # Generate forecast
                 forecast = self._forecast_demand(avg_daily)
                 
-                # Build context
+                # Build context - Note: Some fields may be TIMESTAMP in DB instead of numeric
+                # Using begin_on_hand_units and base_stock_units which are proper integers
+                current_stock = inventory.begin_on_hand_units or 0
+                base_stock = inventory.base_stock_units or 0
+                stock_status = inventory.stock_status or "Unknown"
+                
                 context = f"""Inventory Analysis for Product {product_id} at {location_id}:
-                Current Stock: {inventory.end_on_hand_units} units
-                Base Stock Level: {inventory.base_stock_units} units
-                Days of Supply: {inventory.days_of_supply_end:.1f} days
-                Stock Status: {inventory.stock_status}
+                Current Stock: {current_stock} units
+                Base Stock Level: {base_stock} units
+                Stock Status: {stock_status}
                 Average Weekly Sales: {avg_daily * 7:.0f} units
                 Forecasted Demand (7 days): {forecast['next_7_days']:.0f} units
                 Forecasted Demand (14 days): {forecast['next_14_days']:.0f} units
@@ -72,18 +77,19 @@ class InventoryAgent:
                 )
                 
                 return {
+                    "agent": "inventory",
                     "status": "success",
                     "analysis": response.choices[0].message.content,
-                    "current_stock": inventory.end_on_hand_units,
-                    "days_of_supply": inventory.days_of_supply_end,
-                    "stock_status": inventory.stock_status,
+                    "current_stock": current_stock,
+                    "base_stock": base_stock,
+                    "stock_status": stock_status,
                     "forecast": forecast,
-                    "recommendation": self._generate_recommendation(inventory, avg_daily)
+                    "recommendation": self._generate_recommendation(current_stock, base_stock, avg_daily)
                 }
                 
         except Exception as e:
             logger.error(f"Inventory analysis failed: {e}")
-            return {"status": "error", "message": str(e)}
+            return {"agent": "inventory", "status": "error", "message": str(e)}
     
     def _forecast_demand(self, avg_daily: float, days: int = 14) -> Dict[str, float]:
         """Simple demand forecast"""
@@ -93,18 +99,20 @@ class InventoryAgent:
             "next_30_days": avg_daily * 30
         }
     
-    def _generate_recommendation(self, inventory, avg_daily: float) -> str:
+    def _generate_recommendation(self, current_stock: int, base_stock: int, avg_daily: float) -> str:
         """Generate inventory recommendation"""
-        if not inventory or avg_daily == 0:
-            return "Insufficient data for recommendations"
+        if avg_daily == 0:
+            return "Insufficient sales data for recommendations"
         
-        days_of_supply = inventory.days_of_supply_end or 0
+        # Calculate days of supply
+        days_of_supply = current_stock / avg_daily if avg_daily > 0 else 0
         
         if days_of_supply < 7:
             return f"⚠️ URGENT: Only {days_of_supply:.1f} days of supply remaining. Recommend immediate reorder of {int(avg_daily * 14)} units."
         elif days_of_supply < 14:
-            return f"⚡ LOW STOCK: {days_of_supply:.1f} days of supply. Consider reordering {int(avg_daily * 14)} units soon."
-        elif days_of_supply > 60:
-            return f"📦 OVERSTOCK: {days_of_supply:.1f} days of supply. Consider reducing inventory levels."
+            return f"⚠️ WARNING: {days_of_supply:.1f} days of supply. Consider reordering {int(avg_daily * 14)} units."
+        elif current_stock < base_stock:
+            return f"ℹ️ NOTICE: Stock ({current_stock}) below base level ({base_stock}). Monitor closely."
         else:
-            return f"✅ HEALTHY: {days_of_supply:.1f} days of supply. Stock levels are optimal."
+            return f"✅ HEALTHY: {days_of_supply:.1f} days of supply. Stock levels adequate."
+

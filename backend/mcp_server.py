@@ -31,6 +31,12 @@ mcp = FastMCP("Planalytics AI")
 
 @mcp.tool()
 def query_supply_chain_data(query: str) -> str:
+    print("\n" + "*"*80)
+    print("🔌 MCP SERVER - Tool Invocation")
+    print("*"*80)
+    print(f"🛠️  Tool: query_supply_chain_data")
+    print(f"📝 Query: {query}")
+    print("*"*80)
     """
     Query the Planalytics Supply Chain Database using natural language.
     Use this for questions about sales, inventory, products, or general data analysis.

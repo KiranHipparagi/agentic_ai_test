@@ -31,7 +31,7 @@ class LocationAgent:
             context = self._build_location_context(location_data)
             
             response = self.client.chat.completions.create(
-                model=settings.OPENAI_MODEL_NAME,
+                model=settings.AZURE_OPENAI_DEPLOYMENT,
                 messages=[
                     {"role": "system", "content": self.system_prompt},
                     {"role": "user", "content": f"Query: {query}\n\nLocation Context:\n{context}"}
@@ -45,7 +45,7 @@ class LocationAgent:
                 "analysis": response.choices[0].message.content,
                 "location_data": location_data,
                 "regional_factors": self._extract_factors(location_data),
-                "graph_available": gremlin_conn._connected
+                "gremlin_available": gremlin_conn._connected
             }
         except Exception as e:
             logger.error(f"Location analysis failed: {e}")

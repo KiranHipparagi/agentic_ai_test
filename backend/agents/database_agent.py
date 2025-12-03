@@ -10,12 +10,12 @@ from services.context_resolver import context_resolver
 
 class DatabaseAgent:
     """
-    Intelligent agent that uses Azure AI Search + Neo4j for context resolution,
+    Intelligent agent that uses Azure AI Search + Gremlin for context resolution,
     then generates and executes SQL queries to fetch real data from PostgreSQL
     
     Workflow:
     1. Resolve entities from user query (Azure AI Search)
-    2. Expand context via knowledge graph (Neo4j)
+    2. Expand context via knowledge graph (Gremlin)
     3. Generate SQL with enriched context (LLM)
     4. Execute query on PostgreSQL
     5. Return results
@@ -53,30 +53,42 @@ CRITICAL RULES:
         """
         Generate SQL query from natural language and execute it
         
-        NEW APPROACH: Uses Azure Search + Neo4j for context before SQL generation
+        NEW APPROACH: Uses Azure Search + Gremlin for context before SQL generation
         """
+        print("\n" + "="*80)
+        print("🗄️  STEP 2: DATABASE AGENT - SQL Generation & Execution")
+        print("="*80)
         try:
-            # Step 1: Resolve entities and expand context via Azure Search + Neo4j
-            logger.info(f"🔍 Resolving context for query: {user_query}")
+            # Step 1: Resolve entities and expand context via Azure Search + Gremlin
+            print("\n🔄 Step 2.1: Resolving context (Azure Search + Gremlin)...")
+            logger.info(f"\ud83d\udd0d Resolving context for query: {user_query}")
             resolved_context = self.resolver.resolve_query_context(user_query)
             
             # Log context summary
             context_summary = self.resolver.format_context_summary(resolved_context)
-            logger.info(f"📊 Context: {context_summary}")
+            logger.info(f"\ud83d\udcca Context: {context_summary}")
+            print("\u2705 Context resolution complete")
             
             # Step 2: Generate SQL query with enriched context
+            print("\n\ud83e\udd16 Step 2.2: Generating SQL query with LLM...")
             sql_query = self._generate_sql_with_context(user_query, resolved_context)
             
             # Fix common SQL syntax errors (semicolon before LIMIT)
             sql_query = sql_query.replace("; LIMIT", " LIMIT").replace(";LIMIT", " LIMIT")
             
+            print("\n\ud83d\udcdd Generated SQL Query:")
+            print("-" * 80)
+            print(sql_query)
+            print("-" * 80)
             logger.info(f"Generated SQL: {sql_query}")
             
-            # Step 3: Execute query on PostgreSQL
+            # 3. Execute query on PostgreSQL
+            print("\n⚡ Step 2.3: Executing query on PostgreSQL...")
             with get_db() as db:
                 result = db.execute(text(sql_query))
                 rows = result.fetchall()
                 columns = result.keys()
+                print(f"✅ Query executed successfully! Retrieved {len(rows)} rows")
                 
                 # Convert to list of dicts with proper type handling
                 data = []
@@ -86,7 +98,9 @@ CRITICAL RULES:
                         row_dict[col] = self._normalize_value(value)
                     data.append(row_dict)
             
-            logger.info(f"✅ Query returned {len(data)} rows")
+            print(f"\n\u2705 Database Agent Complete: {len(data)} rows returned")
+            print("="*80)
+            logger.info(f"\u2705 Query returned {len(data)} rows")
             
             return {
                 "agent": "database",
@@ -110,12 +124,17 @@ CRITICAL RULES:
     
     def _generate_sql_with_context(self, user_query: str, resolved_context: Dict[str, Any]) -> str:
         """
-        Generate SQL query using LLM with full context from Azure Search + Neo4j
+        Generate SQL query using LLM with full context from Azure Search + Gremlin
         
         This replaces the old _generate_sql_query method that used hardcoded schema
         """
         # Get comprehensive prompt with all context
         prompt = self.resolver.get_sql_generation_prompt(user_query, resolved_context)
+        
+        print("\n🧠 STEP 2.2a: LLM Decision Making - Input Prompt")
+        print("-" * 80)
+        print(prompt)
+        print("-" * 80)
         
         response = self.client.chat.completions.create(
             model=settings.OPENAI_MODEL_NAME,

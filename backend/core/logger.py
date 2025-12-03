@@ -14,6 +14,13 @@ def setup_logger(name: str) -> logging.Logger:
     logger.handlers.clear()
     
     # Console handler
+    # Fix for Windows Unicode/Emoji support
+    if sys.platform == "win32" and hasattr(sys.stdout, 'reconfigure'):
+        try:
+            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        except Exception:
+            pass
+
     handler = logging.StreamHandler(sys.stdout)
     
     if settings.LOG_FORMAT == "json":

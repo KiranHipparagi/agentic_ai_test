@@ -22,14 +22,25 @@ class WeatherAgent:
     def analyze(self, query: str, location_id: str) -> Dict[str, Any]:
         """Analyze weather impact on supply chain"""
         try:
-            # Fetch recent weather data
+            # Fetch recent weather data (location_id is the store_id in weather table)
             with get_db() as db:
                 weather_records = db.query(WeatherData).filter(
-                    WeatherData.location_id == location_id
-                ).order_by(desc(WeatherData.timestamp)).limit(10).all()
+                    WeatherData.store_id == location_id
+                ).order_by(desc(WeatherData.week_end_date)).limit(10).all()
+            
+            if not weather_records:
+                return {
+                    "agent": "weather",
+                    "analysis": f"No weather data available for location {location_id}",
+                    "data": [],
+                    "impact_score": 0.0
+                }
             
             weather_context = "\n".join([
-                f"Date: {w.timestamp}, Temp: {w.temperature}°C, Precip: {w.precipitation}mm, Conditions: {w.conditions}"
+                f"Week Ending: {w.week_end_date}, Avg Temp: {w.avg_temp_f}°F, " +
+                f"Temp Anomaly: {w.temp_anom_f}°F, Precip: {w.precip_in} in, " +
+                f"Flags: Heatwave={w.heatwave_flag}, Cold={w.cold_spell_flag}, " +
+                f"Heavy Rain={w.heavy_rain_flag}, Snow={w.snow_flag}"
                 for w in weather_records
             ])
             
@@ -48,7 +59,19 @@ class WeatherAgent:
             return {
                 "agent": "weather",
                 "analysis": analysis,
-                "data": [{"timestamp": str(w.timestamp), "temp": w.temperature, "conditions": w.conditions} for w in weather_records[:5]],
+                "data": [
+                    {
+                        "week_end_date": str(w.week_end_date), 
+                        "avg_temp_f": w.avg_temp_f,
+                        "temp_anom_f": w.temp_anom_f,
+                        "precip_in": w.precip_in,
+                        "heatwave": w.heatwave_flag,
+                        "cold_spell": w.cold_spell_flag,
+                        "heavy_rain": w.heavy_rain_flag,
+                        "snow": w.snow_flag
+                    } 
+                    for w in weather_records[:5]
+                ],
                 "impact_score": self._calculate_impact(weather_records)
             }
         except Exception as e:

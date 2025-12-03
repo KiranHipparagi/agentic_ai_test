@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, BigInteger, String, Float, DateTime, ForeignKey, Text, Boolean, TIMESTAMP
+from sqlalchemy import create_engine, MetaData, Table, Column, Integer, BigInteger, String, Float, DateTime, ForeignKey, Text, Boolean, TIMESTAMP, Date, Numeric
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from contextlib import contextmanager
@@ -24,62 +24,67 @@ Base = declarative_base()
 class Calendar(Base):
     __tablename__ = "cal"
     
-    year = Column(BigInteger)
-    quarter = Column(BigInteger)
-    month = Column(Text)
-    week = Column(BigInteger, primary_key=True, index=True)
-    end_date = Column(TIMESTAMP)
+    year = Column(Integer)
+    quarter = Column(Integer)
+    month = Column(String(255))
+    week = Column(Integer, primary_key=True, index=True)
+    end_date = Column(Date)
+    season = Column(String(255))
 
 
 class ProductHierarchy(Base):
+    """Product hierarchy table"""
     __tablename__ = "phier"
     
-    product_id = Column(BigInteger, primary_key=True, index=True)
-    dept = Column(Text)
-    category = Column(Text)
-    product = Column(Text, index=True)
-    min_period = Column(Text)
+    product_id = Column(Integer, primary_key=True, index=True)
+    dept = Column(String(255))
+    category = Column(String(255))
+    product = Column(String(255), index=True)
+    min_period = Column(String(255))
     max_period = Column(Float)
-    period_metric = Column(Text)
-    storage = Column(Text)
-    uom = Column(Text)
+    period_metric = Column(String(255))
+    storage = Column(String(255))
+    uom = Column(String(255))
     unit_price = Column(Float)
 
 
 class LocationDimension(Base):
+    """Location dimension table"""
     __tablename__ = "locdim"
     
-    location = Column(Text, primary_key=True, index=True)
-    region = Column(Text, index=True)
-    market = Column(Text)
-    state = Column(Text)
+    location = Column(String(255), primary_key=True, index=True)
+    region = Column(String(255), index=True)
+    market = Column(String(255))
+    state = Column(String(255))
     latitude = Column(Float)
     longitude = Column(Float)
 
 
 class EventsData(Base):
+    """Events data table"""
     __tablename__ = "events"
     
-    event = Column(Text, primary_key=True)
-    event_type = Column(Text, index=True)
-    event_date = Column(Text, index=True)
-    store_id = Column(Text, index=True)
-    region = Column(Text)
-    market = Column(Text)
-    state = Column(Text)
+    event = Column(String(255), primary_key=True)
+    event_type = Column(String(255), index=True)
+    event_date = Column(Date, primary_key=True, index=True)
+    store_id = Column(String(255), primary_key=True, index=True)
+    region = Column(String(255))
+    market = Column(String(255))
+    state = Column(String(255))
 
 
 class WeatherData(Base):
-    __tablename__ = "weather"
+    """Weather data table"""
+    __tablename__ = "weeklyweather"
     
-    week_end_date = Column(TIMESTAMP, primary_key=True, index=True)
-    store_id = Column(Text, primary_key=True, index=True)
-    avg_temp_f = Column(Float)
-    temp_anom_f = Column(Float)
-    tmax_f = Column(BigInteger)
-    tmin_f = Column(BigInteger)
-    precip_in = Column(Float)
-    precip_anom_in = Column(Float)
+    week_end_date = Column(Date, primary_key=True, index=True)
+    store_id = Column(String(255), primary_key=True, index=True)
+    avg_temp_f = Column(Numeric)
+    temp_anom_f = Column(Numeric)
+    tmax_f = Column(Integer)
+    tmin_f = Column(Integer)
+    precip_in = Column(Numeric)
+    precip_anom_in = Column(String(255))
     heatwave_flag = Column(Boolean)
     cold_spell_flag = Column(Boolean)
     heavy_rain_flag = Column(Boolean)
@@ -87,31 +92,31 @@ class WeatherData(Base):
 
 
 class InventoryData(Base):
-    __tablename__ = "inventory"
+    """Inventory data table"""
+    __tablename__ = "salesinventory"
     
-    store_id = Column(Text, primary_key=True, index=True)
-    product_id = Column(BigInteger, primary_key=True, index=True)
-    end_date = Column(TIMESTAMP, primary_key=True, index=True)
-    begin_on_hand_units = Column(BigInteger)
-    received_units = Column(BigInteger)
-    sales_units = Column(BigInteger)
-    end_on_hand_units = Column(BigInteger)
-    base_stock_units = Column(BigInteger)
-    days_of_supply_end = Column(Float)
-    stock_status = Column(Text)
+    store_id = Column(String(255), primary_key=True, index=True)
+    product_id = Column(Integer, primary_key=True, index=True)
+    end_date = Column(Date, primary_key=True, index=True)
+    begin_on_hand_units = Column(Integer)
+    received_units = Column(Integer)
+    sales_units = Column(Integer)
+    end_on_hand_units = Column(Integer)
+    base_stock_units = Column(Integer)
+    days_of_supply_end = Column(Numeric)
+    stock_status = Column(String(255))
 
 
 class Metrics(Base):
+    """Metrics/Sales data table"""
     __tablename__ = "metrics"
     
-    product = Column(Text)
-    location = Column(Text, index=True)
-    end_date = Column(Text, index=True)
-    metric = Column(BigInteger)
-    metric_nrm = Column(BigInteger)
-    metric_ly = Column(BigInteger)  # Added based on new logic
-    product_id = Column(BigInteger, primary_key=True, index=True)
-    column1 = Column(Float)
+    product = Column(String(255), primary_key=True, index=True)
+    location = Column(String(255), primary_key=True, index=True)
+    end_date = Column(Date, primary_key=True, index=True)
+    metric = Column(Integer)
+    metric_nrm = Column(Integer)
+    metric_ly = Column(Integer)
 
 
 # Legacy aliases for backward compatibility

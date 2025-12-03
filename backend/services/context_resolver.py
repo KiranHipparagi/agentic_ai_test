@@ -1,13 +1,14 @@
-"""Context Resolver Service - Combines Azure Search entity resolution with Cosmos DB Gremlin graph expansion"""
+"""Context Resolver Service - Combines Azure Search entity resolution with Gremlin graph expansion"""
 from typing import Dict, Any, List, Optional
+from datetime import datetime, timedelta
 from database.azure_search import azure_search
-from database.gremlin_db import GremlinConnection
+from database.gremlin_db import gremlin_conn
 from core.logger import logger
 
 
 class ContextResolver:
     """
-    Hybrid context resolution using Azure AI Search + Cosmos DB Gremlin Knowledge Graph
+    Hybrid context resolution using Azure AI Search + Gremlin Knowledge Graph
     
     Workflow:
     1. Azure Search: Resolve vague terms to exact IDs (e.g., "Pepsi" → product_id)
@@ -17,7 +18,7 @@ class ContextResolver:
     
     def __init__(self):
         self.search = azure_search
-        self.graph = GremlinConnection()
+        self.graph = gremlin_conn
     
     def resolve_query_context(self, user_query: str) -> Dict[str, Any]:
         """
@@ -30,7 +31,7 @@ class ContextResolver:
             {
                 "products": {
                     "resolved": [...],  # From Azure Search
-                    "expanded": [...]   # From Neo4j graph
+                    "expanded": [...]   # From Gremlin graph
                 },
                 "locations": {
                     "resolved": [...],
@@ -51,13 +52,55 @@ class ContextResolver:
                 }
             }
         """
+        print("\n" + "="*80)
+        print("🔎 STEP 1: CONTEXT RESOLUTION - Starting RAG Pipeline")
+        print("="*80)
+        print(f"📝 User Query: {user_query}")
         logger.info(f"🔍 Resolving context for query: {user_query}")
         
         # Step 1: Entity resolution via Azure Search
+        print("\n🔵 STEP 1.1: Azure AI Search - Entity Resolution")
+        print("-" * 80)
         entities = self.search.resolve_entities(user_query)
         
-        # Step 2: Context expansion via Neo4j
+        # Detailed printing of resolved entities
+        print(f"✅ Entities found:")
+        if entities.get('products'):
+            print(f"   • Products ({len(entities['products'])}): {[p.get('product', p.get('product_name', 'Unknown')) for p in entities['products'][:5]]}" + (f" ... (+{len(entities['products'])-5} more)" if len(entities['products']) > 5 else ""))
+        else:
+            print("   • Products: None")
+            
+        if entities.get('locations'):
+            print(f"   • Locations ({len(entities['locations'])}): {[l.get('location', l.get('store_name', 'Unknown')) for l in entities['locations'][:5]]}" + (f" ... (+{len(entities['locations'])-5} more)" if len(entities['locations']) > 5 else ""))
+        else:
+            print("   • Locations: None")
+            
+        if entities.get('events'):
+            print(f"   • Events ({len(entities['events'])}): {[e.get('event', e.get('event_name', 'Unknown')) for e in entities['events'][:5]]}" + (f" ... (+{len(entities['events'])-5} more)" if len(entities['events']) > 5 else ""))
+        else:
+            print("   • Events: None")
+            
+        if entities.get('dates'):
+            print(f"   • Dates ({len(entities['dates'])}): {[d.get('date') for d in entities['dates'][:5]]}" + (f" ... (+{len(entities['dates'])-5} more)" if len(entities['dates']) > 5 else ""))
+        else:
+            print("   • Dates: None")
+        
+        # Step 2: Context expansion via Gremlin
+        print("\n🟢 STEP 1.2: Gremlin Knowledge Graph - Context Expansion")
+        print("-" * 80)
         expanded_context = self._expand_context_via_graph(entities)
+        
+        # Detailed printing of expanded context
+        print(f"✅ Graph expansion complete:")
+        if expanded_context.get('expanded_products'):
+            print(f"   • Expanded Products ({len(expanded_context['expanded_products'])}): {[p.get('product_name') for p in expanded_context['expanded_products'][:5]]}" + (f" ... (+{len(expanded_context['expanded_products'])-5} more)" if len(expanded_context['expanded_products']) > 5 else ""))
+        else:
+            print("   • Expanded Products: None")
+            
+        if expanded_context.get('expanded_locations'):
+            print(f"   • Expanded Locations ({len(expanded_context['expanded_locations'])}): {[l.get('store_name') for l in expanded_context['expanded_locations'][:5]]}" + (f" ... (+{len(expanded_context['expanded_locations'])-5} more)" if len(expanded_context['expanded_locations']) > 5 else ""))
+        else:
+            print("   • Expanded Locations: None")
         
         # Step 3: Get metadata context
         metadata = self.search.get_schema_context(user_query)
@@ -87,9 +130,11 @@ class ContextResolver:
         return full_context
     
     def _expand_context_via_graph(self, entities: Dict[str, List]) -> Dict[str, Any]:
-        """Expand entity context using Neo4j knowledge graph relationships"""
+        """Expand entity context using Gremlin knowledge graph relationships"""
+        print("  🌐 Querying Gremlin Graph Database...")
         if not self.graph.ensure_connected():
-            logger.warning("Neo4j unavailable, skipping graph expansion")
+            logger.warning("Gremlin unavailable, skipping graph expansion")
+            print("  ⚠️  Gremlin Graph unavailable - skipping expansion")
             return {
                 "expanded_products": [],
                 "expanded_locations": [],
@@ -101,14 +146,18 @@ class ContextResolver:
         # Expand products via category hierarchy
         product_ids = [p.get("id") for p in entities.get("products", []) if p.get("id")]
         if product_ids:
+            print(f"  📦 Expanding product context for IDs: {product_ids[:3]}...")
             expanded["expanded_products"] = self.graph.expand_product_context(product_ids)
+            print(f"  ✅ Found {len(expanded['expanded_products'])} related products via graph traversal")
         else:
             expanded["expanded_products"] = []
         
         # Expand locations via geographic hierarchy
         location_ids = [l.get("id") for l in entities.get("locations", []) if l.get("id")]
         if location_ids:
+            print(f"  🏢 Expanding location context for IDs: {location_ids[:3]}...")
             expanded["expanded_locations"] = self.graph.expand_location_context(location_ids)
+            print(f"  ✅ Found {len(expanded['expanded_locations'])} related locations via graph traversal")
         else:
             expanded["expanded_locations"] = []
         
@@ -121,12 +170,23 @@ class ContextResolver:
         
         return expanded
     
+    def _convert_excel_date(self, val: Any) -> Any:
+        """Convert Excel serial date to YYYY-MM-DD string"""
+        try:
+            if isinstance(val, (int, float)):
+                return (datetime(1899, 12, 30) + timedelta(days=val)).strftime('%Y-%m-%d')
+            elif isinstance(val, str) and val.isdigit():
+                return (datetime(1899, 12, 30) + timedelta(days=int(val))).strftime('%Y-%m-%d')
+            return val
+        except Exception:
+            return val
+
     def _extract_date_range(self, dates: List[Dict]) -> Optional[tuple]:
         """Extract min/max date range from calendar results"""
         if not dates:
             return None
         
-        date_values = [d.get("date") for d in dates if d.get("date")]
+        date_values = [self._convert_excel_date(d.get("date")) for d in dates if d.get("date")]
         if not date_values:
             return None
         
@@ -198,25 +258,46 @@ class ContextResolver:
         # Database schema (dynamic based on query needs)
         prompt_parts.append("\nAvailable Database Tables:")
         prompt_parts.append("""
-- metrics (product, location, end_date, metric, metric_nrm, metric_ly, product_id) -- SALES DATA
+- metrics (product, location, end_date, metric, metric_nrm, metric_ly)
+  * 'product' = Product name (e.g., 'Hamburgers', 'Coffee & Tea')
+  * 'location' = Store ID (e.g., 'ST0050')
   * 'metric' = WDD Metric (Weather Driven Demand)
   * 'metric_nrm' = Normal Metric
-  * 'metric_ly' = Last Year Metric (New addition)
-  * DO NOT filter by metric='sales' - metric IS the value!
+  * 'metric_ly' = Last Year Metric
+  * DO NOT filter by metric='sales' - metric IS the sales value!
   
-- inventory (store_id, product_id, end_date, begin_on_hand_units, received_units, 
-             sales_units, end_on_hand_units, base_stock_units, days_of_supply_end, stock_status)
+- salesinventory (store_id, product_id, end_date, begin_on_hand_units, received_units, 
+                  sales_units, end_on_hand_units, base_stock_units, days_of_supply_end, stock_status)
+  * end_on_hand_units = INTEGER (current stock level)
+  * days_of_supply_end = NUMERIC (how many days current stock will last)
+  * stock_status = VARCHAR ('Understock', 'Optimal', 'Overstock')
   
-- weather (week_end_date, store_id, avg_temp_f, temp_anom_f, tmax_f, tmin_f, 
-           precip_in, heatwave_flag, cold_spell_flag, heavy_rain_flag, snow_flag)
+- weeklyweather (week_end_date, store_id, avg_temp_f, temp_anom_f, tmax_f, tmin_f, 
+                 precip_in, precip_anom_in, heatwave_flag, cold_spell_flag, heavy_rain_flag, snow_flag)
+  * week_end_date = DATE (not TIMESTAMP)
+  * store_id links to locdim.location
+  * precip_anom_in is VARCHAR (string) field, not numeric
   
 - events (event, event_type, event_date, store_id, region, market, state)
+  * event = Event name
+  * event_type = Type of event (e.g., 'National Holiday')
+  * event_date = DATE (not TIMESTAMP)
+  * store_id links to locdim.location
 
 - locdim (location, region, market, state, latitude, longitude)
+  * location = Store ID (primary key)
+  * region, market, state = Location hierarchy
 
-- phier (product_id, dept, category, product, unit_price, uom, storage)
+- phier (product_id, dept, category, product, min_period, max_period, period_metric, storage, uom, unit_price)
+  * product_id = Numeric product identifier
+  * product = Product name
+  * category = Product category (e.g., 'QSR', 'Beverages')
+  * dept = Department (e.g., 'Fast Food', 'Grocery')
 
-- cal (year, quarter, month, week, end_date)
+- cal (year, quarter, month, week, end_date, season)
+  * week = Primary key
+  * end_date = DATE (not TIMESTAMP)
+  * season = Spring, Summer, Fall, Winter
 
 NEW FORMULAS (Apply these logic):
 1. Short Term Planning (< 4 weeks): Use WDD vs Normal
@@ -234,16 +315,25 @@ SEASONS DEFINITION:
         # SQL generation instructions
         prompt_parts.append("""
 IMPORTANT SQL GENERATION RULES:
-1. Use PostgreSQL syntax (LIMIT not TOP, || for concat)
-2. For sales data, query the 'metrics' table and use SUM(metric), SUM(metric_nrm), or SUM(metric_ly) based on the formulas above.
-3. Join metrics with locdim on location field
-4. Join metrics with phier on product_id
-5. Filter using the Product IDs and Store IDs provided above
-6. Include descriptive columns (product names, store names, states) in results
-7. Use appropriate aggregations (SUM, AVG, COUNT) with GROUP BY
-8. Add ORDER BY for meaningful sorting
-9. Always include LIMIT clause (max 100 rows)
-10. Return ONLY the SQL query, no explanation
+1. Use PostgreSQL syntax (LIMIT not TOP, || for concat, CAST for type conversion)
+2. For sales/metrics data: Query 'metrics' table, use SUM(metric), SUM(metric_nrm), or SUM(metric_ly)
+3. Join 'metrics' with 'locdim' using: metrics.location = locdim.location
+4. Join 'metrics' with 'phier' using: metrics.product = phier.product
+5. Join 'salesinventory' with 'locdim' using: salesinventory.store_id = locdim.location
+6. Join 'weeklyweather' with 'locdim' using: weeklyweather.store_id = locdim.location
+7. Join 'events' with 'locdim' using: events.store_id = locdim.location
+8. Filter using the Product IDs and Store IDs provided above
+9. Include descriptive columns (product names, store names, states) in results
+10. Use appropriate aggregations (SUM, AVG, COUNT) with GROUP BY
+11. Add ORDER BY for meaningful sorting (e.g., ORDER BY sales DESC)
+12. Always include LIMIT clause (max 100 rows)
+13. Handle date comparisons correctly - DATE columns don't need casting
+14. Return ONLY the SQL query, no explanation, no markdown formatting
+
+CRITICAL TABLE NAMES (Use these exact names):
+- salesinventory (NOT 'inventory')
+- weeklyweather (NOT 'weather')
+- All DATE columns are type DATE (not TIMESTAMP) - compare directly with '2024-01-01'
 
 Generate the PostgreSQL SELECT query:
 """)
