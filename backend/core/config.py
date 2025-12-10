@@ -1,7 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 from typing import Optional
-from urllib.parse import quote_plus
 
 
 class Settings(BaseSettings):
@@ -31,11 +30,9 @@ class Settings(BaseSettings):
     
     @property
     def DATABASE_URL(self) -> str:
-        # URL-encode the password to handle special characters like @ and #
-        encoded_password = quote_plus(self.POSTGRES_PASSWORD)
-        return f"postgresql+psycopg2://{self.POSTGRES_USER}:{encoded_password}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        return f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
     
-    # Cosmos DB Gremlin API (for knowledge graph)
+    # Cosmos DB Gremlin API (Knowledge Graph)
     COSMOS_ENDPOINT: str
     COSMOS_KEY: str
     COSMOS_DATABASE: str
@@ -45,7 +42,7 @@ class Settings(BaseSettings):
     # Azure OpenAI (Main LLM for chat and SQL generation)
     OPENAI_ENDPOINT: str
     OPENAI_API_KEY: str
-    OPENAI_MODEL_NAME: str = "openai.gpt-4.1"
+    OPENAI_MODEL_NAME: str = "o3-mini"
     OPENAI_MODEL_4_1_NANO: str = "openai.gpt-4.1-nano"
     AZURE_OPENAI_API_VERSION: str = "2024-02-01"
     

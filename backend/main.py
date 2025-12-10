@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Starting Planalytics AI Platform...")
     try:
         init_db()
-        logger.info("✅ MySQL database initialized")
+        logger.info("✅ PostgreSQL planalytics_database initialized")
     except Exception as e:
         logger.error(f"❌ Startup failed: {e}")
         raise

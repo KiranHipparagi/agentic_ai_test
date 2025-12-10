@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any
-from database.postgres_db import get_db, SalesData, InventoryData, WeatherData, EventsData
+from database.postgres_db import get_db, Metrics, WeatherData, EventsData
 from sqlalchemy import func
 from core.logger import logger
 
@@ -15,54 +15,32 @@ class DataUploadRequest(BaseModel):
 
 @router.post("/ingest")
 async def ingest_data(request: DataUploadRequest):
-    """Ingest data directly into MySQL database"""
+    """Ingest data into PostgreSQL database - NOTE: Data is already loaded, this endpoint is for reference only"""
     try:
-        count = 0
-        
-        with get_db() as db:
-            if request.data_type == "sales":
-                for record in request.records:
-                    db.add(SalesData(**record))
-                count = len(request.records)
-                
-            elif request.data_type == "inventory":
-                for record in request.records:
-                    db.add(InventoryData(**record))
-                count = len(request.records)
-                
-            elif request.data_type == "weather":
-                for record in request.records:
-                    db.add(WeatherData(**record))
-                count = len(request.records)
-                
-            elif request.data_type == "events":
-                for record in request.records:
-                    db.add(EventsData(**record))
-                count = len(request.records)
-            else:
-                raise HTTPException(status_code=400, detail=f"Invalid data_type: {request.data_type}")
-        
-        return {"status": "success", "records_ingested": count, "data_type": request.data_type}
+        return {
+            "status": "info",
+            "message": "Data ingestion is not needed - all data is already loaded in planalytics_database",
+            "note": "Use the PostgreSQL database directly. Tables: calendar, events, location, metrics, perishable, product_hierarchy, weekly_weather"
+        }
         
     except Exception as e:
-        logger.error(f"Data ingestion failed: {e}")
+        logger.error(f"Data ingestion endpoint error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/database-stats")
 async def get_database_stats():
-    """Get MySQL database statistics"""
+    """Get PostgreSQL database statistics for planalytics_database"""
     try:
         with get_db() as db:
             stats = {
                 "events_count": db.query(func.count(EventsData.id)).scalar(),
                 "weather_count": db.query(func.count(WeatherData.id)).scalar(),
-                "sales_count": db.query(func.count(SalesData.id)).scalar() if hasattr(db.query, 'SalesData') else 0,
-                "inventory_count": db.query(func.count(InventoryData.id)).scalar() if hasattr(db.query, 'InventoryData') else 0
+                "metrics_count": db.query(func.count(Metrics.id)).scalar()
             }
         
         return {
-            "database": "MySQL",
+            "database": "PostgreSQL (planalytics_database)",
             "connection": "active",
             "stats": stats
         }

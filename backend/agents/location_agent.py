@@ -31,7 +31,7 @@ class LocationAgent:
             context = self._build_location_context(location_data)
             
             response = self.client.chat.completions.create(
-                model=settings.AZURE_OPENAI_DEPLOYMENT,
+                model=settings.OPENAI_MODEL_NAME,
                 messages=[
                     {"role": "system", "content": self.system_prompt},
                     {"role": "user", "content": f"Query: {query}\n\nLocation Context:\n{context}"}

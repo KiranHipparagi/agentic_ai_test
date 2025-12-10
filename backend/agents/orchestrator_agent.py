@@ -273,6 +273,7 @@ class EnhancedOrchestratorAgent:
         data_keywords = [
             "how many", "what is", "show me", "list", "find", "get",
             "sales", "inventory", "events", "weather", "data", "records",
+            "batch", "expir", "spoil", "waste", "movement", "transfer",
             "count", "total", "average", "sum"
         ]
         if any(keyword in query_lower for keyword in data_keywords):
@@ -491,8 +492,13 @@ Keep responses brief and professional."""
             except Exception as e:
                 logger.warning(f"Events agent failed: {e}")
         
-        # Inventory analysis
-        if any(word in query_lower for word in ["inventory", "stock", "demand", "forecast"]):
+        # Inventory analysis (batch tracking, spoilage, sales transactions, stock movements)
+        if any(word in query_lower for word in [
+            "inventory", "stock", "batch", "expir", "shelf life", 
+            "spoil", "waste", "loss", "damage", "perishable",
+            "sales transaction", "revenue by batch", "batch sale",
+            "movement", "transfer", "adjustment", "stock tracking"
+        ]):
             try:
                 inventory_result = self.inventory_agent.analyze(
                     query,

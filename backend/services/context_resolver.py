@@ -258,52 +258,133 @@ class ContextResolver:
         # Database schema (dynamic based on query needs)
         prompt_parts.append("\nAvailable Database Tables:")
         prompt_parts.append("""
-- metrics (product, location, end_date, metric, metric_nrm, metric_ly)
-  * 'product' = Product name (e.g., 'Hamburgers', 'Coffee & Tea')
-  * 'location' = Store ID (e.g., 'ST0050')
+- metrics (id, product, location, end_date, metric, metric_nrm, metric_ly)
+  * 'product' = Product name (e.g., 'Hamburgers', 'Coffee & Tea', 'Milk', 'Bacon')
+  * 'location' = Store ID (e.g., 'ST0050', 'ST2900')
   * 'metric' = WDD Metric (Weather Driven Demand)
   * 'metric_nrm' = Normal Metric
   * 'metric_ly' = Last Year Metric
   * DO NOT filter by metric='sales' - metric IS the sales value!
   
-- inventory (store_id, product_id, end_date, begin_on_hand_units, received_units, 
-            sales_units, end_on_hand_units, base_stock_units, days_of_supply_end, stock_status)
-  * end_on_hand_units = INTEGER (current stock level)
-  * days_of_supply_end = NUMERIC (how many days current stock will last)
-  * stock_status = VARCHAR ('Understock', 'Optimal', 'Overstock')
-  
-- weekly_weather (week_end_date, store_id, avg_temp_f, temp_anom_f, tmax_f, tmin_f, 
-                  precip_in, precip_anom_in, heatwave_flag, cold_spell_flag, heavy_rain_flag, snow_flag)
+- weekly_weather (id, week_end_date, avg_temp_f, temp_anom_f, tmax_f, tmin_f, 
+                  precip_in, precip_anom_in, heatwave_flag, cold_spell_flag, heavy_rain_flag, snow_flag, store_id)
   * week_end_date = DATE (not TIMESTAMP)
   * store_id links to location.location
-  * precip_anom_in is VARCHAR (string) field, not numeric
+  * All flags are BOOLEAN
   
-- events (event, event_type, event_date, store_id, region, market, state)
-  * event = Event name
-  * event_type = Type of event (e.g., 'National Holiday')
+- events (id, event, event_type, event_date, store_id, region, market, state)
+  * event = Event name (e.g., 'Memorial Day', 'Black Friday')
+  * event_type = Type of event (e.g., 'National Holiday', 'Sporting Event')
   * event_date = DATE (not TIMESTAMP)
   * store_id links to location.location
 
-- location (location, region, market, state, latitude, longitude)
-  * location = Store ID (primary key)
-  * region, market, state = Location hierarchy
+- location (id, location, region, market, state, latitude, longitude)
+  * location = Store ID (primary key, e.g., 'ST6111')
+  * region = Geographic region (e.g., 'eastern north central', 'southeast')
+  * market = Market area (e.g., 'chicago, il', 'dallas, tx')
+  * state = State name (lowercase, e.g., 'illinois', 'texas')
 
-- product_hierarchy (product_id, dept, category, product, min_period, max_period, period_metric, storage, uom, unit_price)
-  * product_id = Numeric product identifier
-  * product = Product name
-  * category = Product category (e.g., 'QSR', 'Beverages', 'Perishable')
+- product_hierarchy (product_id, dept, category, product)
+  * product_id = Numeric product identifier (1-37)
+  * product = Product name (e.g., 'Hamburgers', 'Pizza', 'Sandwiches')
+  * category = Product category (e.g., 'QSR', 'Perishable')
   * dept = Department (e.g., 'Fast Food', 'Grocery')
 
-- calendar (year, quarter, month, week, end_date, season)
-  * week = Primary key
-  * end_date = DATE (not TIMESTAMP)
-  * season = Spring, Summer, Fall, Winter
+- perishable (id, product, perishable_id, min_period, max_period, period_metric, storage)
+  * product = Perishable product name (e.g., 'Bacon', 'Eggs', 'Milk', 'Lettuce')
+  * perishable_id = Identifier for perishable item
+  * min_period, max_period = Shelf life range
+  * period_metric = Time unit (e.g., 'Days', 'Weeks', 'Months')
+  * storage = Storage requirement (e.g., 'Refrigerate', 'Freeze', 'Pantry')
 
-NEW FORMULAS (Apply these logic):
-1. Short Term Planning (< 4 weeks): Use WDD vs Normal
+- calendar (id, end_date, year, quarter, month, week, season)
+  * end_date = DATE (primary date field)
+  * week = Week number (1-53)
+  * season = Spring, Summer, Fall, Winter
+  * All DATE fields are type DATE (not TIMESTAMP)
+
+- sales (id, batch_id, store_code, product_code, sale_date, quantity_sold, revenue)
+  * batch_id = Links to batches.batch_id (for batch tracking)
+  * store_code = Store identifier (links to location.location)
+  * product_code = Product identifier (links to product_hierarchy.product)
+  * sale_date = Transaction date (DATE type)
+  * quantity_sold = Number of units sold (DECIMAL)
+  * revenue = Total revenue from sale (DECIMAL)
+  * Use for: transaction-level sales analysis, batch-level sales tracking, revenue calculations
+
+- batches (id, batch_id, product_code, store_code, received_date, expiry_date, initial_qty, current_qty)
+  * batch_id = Unique batch identifier (PRIMARY KEY)
+  * product_code = Product in this batch (links to product_hierarchy.product)
+  * store_code = Store holding this batch (links to location.location)
+  * received_date = Date batch was received (DATE type)
+  * expiry_date = Expiration date of batch (DATE type)
+  * initial_qty = Starting quantity (DECIMAL)
+  * current_qty = Remaining quantity (DECIMAL)
+  * Use for: batch expiry analysis, inventory levels, perishable tracking
+  * To find expiring batches: WHERE expiry_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL 'X days'
+
+- batch_stock_tracking (id, batch_id, transaction_date, transaction_type, quantity, store_code, product_code)
+  * batch_id = Links to batches.batch_id (tracking for specific batch)
+  * transaction_date = Date of inventory movement (DATE type)
+  * transaction_type = Movement type (TRANSFER_IN, SALE, ADJUSTMENT, SPOILAGE, RETURN)
+  * quantity = Amount moved (DECIMAL)
+  * store_code = Store identifier (links to location.location)
+  * product_code = Product identifier (links to product_hierarchy.product)
+  * Use for: inventory movement analysis, spoilage tracking, transfer tracking, stock adjustments
+  * Common queries: 
+    - Spoilage: WHERE transaction_type = 'SPOILAGE'
+    - Transfers: WHERE transaction_type = 'TRANSFER_IN'
+    - Sales: WHERE transaction_type = 'SALE'
+
+- spoilage_report (id, batch_id, store_code, product_code, report_date, spoilage_qty, spoilage_pct, spoilage_case)
+  * batch_id = Links to batches.batch_id (spoilage for specific batch)
+  * store_code = Store with spoilage (links to location.location)
+  * product_code = Product with spoilage (links to product_hierarchy.product)
+  * report_date = Date of spoilage report (DATE type)
+  * spoilage_qty = Quantity spoiled (DECIMAL)
+  * spoilage_pct = Spoilage percentage (DECIMAL, 0-100)
+  * spoilage_case = Severity category (No Spoilage, Low 0-5%, Medium 5-10%, High 10-20%, Critical 20%+)
+  * Use for: spoilage analysis, waste tracking, product/store spoilage patterns
+  * Severity filters:
+    - Low: WHERE spoilage_pct BETWEEN 0 AND 5
+    - Medium: WHERE spoilage_pct BETWEEN 5 AND 10
+    - High: WHERE spoilage_pct BETWEEN 10 AND 20
+    - Critical: WHERE spoilage_pct > 20
+
+INVENTORY TABLE RELATIONSHIPS:
+- sales.batch_id → batches.batch_id (sales linked to specific batches)
+- batches.batch_id → batch_stock_tracking.batch_id (movements for each batch)
+- batches.batch_id → spoilage_report.batch_id (spoilage for each batch)
+- All tables link to location via store_code/location
+- All tables link to product_hierarchy via product_code/product
+- Join perishable with batches for shelf life analysis using product names
+
+DEMAND FORMULAS (Critical - Use NRF Calendar):
+
+1. SHORT-TERM PLANNING (Less than 4 weeks ahead):
+   Use: WDD vs Normal Metric
    Formula: (SUM(metric) - SUM(metric_nrm)) / NULLIF(SUM(metric_nrm), 0)
-2. Long Term Planning (> 4 weeks) & Historical: Use WDD vs LY
+   Meaning: Compare weather-driven demand to normal expected demand for upcoming weeks
+   Example: "Show sales forecast for next 2 weeks" → Use metric vs metric_nrm
+
+2. LONG-TERM PLANNING (More than 4 weeks ahead):
+   Use: WDD vs Last Year (LY)
    Formula: (SUM(metric) - SUM(metric_ly)) / NULLIF(SUM(metric_ly), 0)
+   Meaning: Compare to last year's demand for stable long-range forecasts
+   Example: "Forecast for next quarter" OR "Next Month" → Use metric vs metric_ly
+
+3. HISTORICAL REPORTING (Past analysis):
+   Use: WDD vs Last Year (LY)
+   Formula: (SUM(metric) - SUM(metric_ly)) / NULLIF(SUM(metric_ly), 0)
+   Meaning: Year-over-year comparison to explain past performance
+   Example: "How did we perform last month vs last year?" → Use metric vs metric_ly
+
+IMPORTANT NOTES:
+- ALWAYS use NULLIF to prevent division by zero errors
+- metric = WDD (Weather Driven Demand) - the actual sales value
+- metric_nrm = Normal expected demand
+- metric_ly = Last year's demand for same period
+- DO NOT filter by metric='sales' - metric column IS the sales value itself!
 
 SEASONS DEFINITION:
 - Spring: Feb, Mar, Apr
@@ -317,25 +398,35 @@ SEASONS DEFINITION:
 IMPORTANT SQL GENERATION RULES:
 1. Use PostgreSQL syntax (LIMIT not TOP, || for concat, CAST for type conversion)
 2. For sales/metrics data: Query 'metrics' table, use SUM(metric), SUM(metric_nrm), or SUM(metric_ly)
-3. Join 'metrics' with 'location' using: metrics.location = location.location
-4. Join 'metrics' with 'product_hierarchy' using: metrics.product = product_hierarchy.product
-5. Join 'inventory' with 'location' using: inventory.store_id = location.location
-6. Join 'weekly_weather' with 'location' using: weekly_weather.store_id = location.location
-7. Join 'events' with 'location' using: events.store_id = location.location
-8. Filter using the Product IDs and Store IDs provided above
-9. Include descriptive columns (product names, store names, states) in results
-10. Use appropriate aggregations (SUM, AVG, COUNT) with GROUP BY
-11. Add ORDER BY for meaningful sorting (e.g., ORDER BY sales DESC)
-12. Always include LIMIT clause (max 100 rows)
-13. Handle date comparisons correctly - DATE columns don't need casting
-14. Return ONLY the SQL query, no explanation, no markdown formatting
+3. CRITICAL: metric column IS the sales value - DO NOT use WHERE metric='sales'!
+4. For demand calculations:
+   - Short-term (< 4 weeks): SELECT (SUM(metric) - SUM(metric_nrm)) / NULLIF(SUM(metric_nrm), 0)
+   - Long-term (> 4 weeks) OR "Next Month": SELECT (SUM(metric) - SUM(metric_ly)) / NULLIF(SUM(metric_ly), 0)
+   - Historical: SELECT (SUM(metric) - SUM(metric_ly)) / NULLIF(SUM(metric_ly), 0)
+5. Join 'metrics' with 'location' using: metrics.location = location.location
+6. Join 'metrics' with 'product_hierarchy' using: metrics.product = product_hierarchy.product
+7. Join 'weekly_weather' with 'location' using: weekly_weather.store_id = location.location
+8. Join 'events' with 'location' using: events.store_id = location.location
+9. Filter using the Product IDs and Store IDs provided above
+10. Include descriptive columns (product names, store names, states) in results
+11. Use appropriate aggregations (SUM, AVG, COUNT) with GROUP BY
+12. Add ORDER BY for meaningful sorting (e.g., ORDER BY total_sales DESC)
+13. Always include LIMIT clause (max 100 rows)
+14. Handle date comparisons correctly - DATE columns don't need casting
+15. ALWAYS use NULLIF(denominator, 0) to prevent division by zero
+16. Return ONLY the SQL query, no explanation, no markdown formatting
 
 CRITICAL TABLE NAMES (Use these exact names):
-- inventory (NOT 'salesinventory')
-- weekly_weather (NOT 'weeklyweather' or 'weather')
+- metrics (NOT 'sales' or 'salesinventory')
+- sales (transaction-level sales data with batch tracking)
+- batches (inventory batches with expiry tracking)
+- batch_stock_tracking (inventory movements: TRANSFER_IN, SALE, SPOILAGE, ADJUSTMENT, RETURN)
+- spoilage_report (waste tracking with severity: No Spoilage, Low, Medium, High, Critical)
+- weekly_weather (NOT 'weather' or 'weeklyweather')
 - location (NOT 'locdim')
 - product_hierarchy (NOT 'phier')
 - calendar (NOT 'cal')
+- perishable (for perishable products info)
 - All DATE columns are type DATE (not TIMESTAMP) - compare directly with '2024-01-01'
 
 Generate the PostgreSQL SELECT query:

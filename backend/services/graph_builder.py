@@ -1,12 +1,12 @@
 from typing import Dict, Any
 from database.gremlin_db import gremlin_conn
-from database.postgres_db import get_db, SalesData, WeatherData, EventsData  # ✅ Changed
+from database.postgres_db import get_db, Metrics, WeatherData, EventsData
 from core.logger import logger
 from sqlalchemy import func
 
 
 class GraphBuilderService:
-    """Service for building knowledge graphs using Gremlin (Cosmos DB)"""
+    """Service for building knowledge graphs in Gremlin/Cosmos DB"""
     
     def build_supply_chain_graph(self, product_id: str, location_id: str) -> bool:
         """Build complete supply chain graph for product-location pair"""
@@ -43,8 +43,9 @@ class GraphBuilderService:
                 "weather_impact": weather_impact,
                 "event_impact": event_impact
             }
-            gremlin_conn.create_supply_chain_graph(graph_data)
-            logger.info(f"Created supply chain graph for {product_id} at {location_id}")
+            
+            neo4j_conn.create_supply_chain_graph(graph_data)
+            logger.info(f"Built supply chain graph for {product_id} at {location_id}")
             return True
             
         except Exception as e:

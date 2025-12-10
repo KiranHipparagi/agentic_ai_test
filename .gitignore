@@ -32,9 +32,6 @@ env/
 .env.local
 .env.*.local
 
-# Neo4j database file (not used - using Gremlin instead)
-backend/database/neo4j_db.py
-
 # IDEs
 .vscode/
 .idea/
@@ -63,6 +60,9 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
+
+# Data Files (CSV data)
+backend/data/
 
 # Testing
 .coverage

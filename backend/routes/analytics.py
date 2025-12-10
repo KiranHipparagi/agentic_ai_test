@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
-from database.postgres_db import get_db, Metrics, InventoryData, WeatherData, ProductHierarchy
+from database.postgres_db import get_db, Metrics, WeatherData, ProductHierarchy
 from sqlalchemy import func, desc, or_, cast, Date
 from core.logger import logger
 

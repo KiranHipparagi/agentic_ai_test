@@ -20,12 +20,16 @@ class AzureSearchService:
     # Index name mappings
     INDEXES = {
         "products": "planalytics-data-index-products",
+        "perishable": "planalytics-data-index-perishable",
         "locations": "planalytics-data-index-locations",
         "events": "planalytics-data-index-events",
         "calendar": "planalytics-data-index-calendar",
-        "sales_metadata": "planalytics-data-index-sales-metadata",
         "weather_metadata": "planalytics-data-index-weather-metadata",
-        "metrics_metadata": "planalytics-data-index-metrics-metadata"
+        "metrics_metadata": "planalytics-data-index-metrics-metadata",
+        "sales_metadata": "planalytics-index-sales-metadata",
+        "batches_metadata": "planalytics-index-batches-metadata",
+        "batch_tracking_metadata": "planalytics-index-batch-tracking-metadata",
+        "spoilage_metadata": "planalytics-index-spoilage-metadata"
     }
     
     def __init__(self):

@@ -56,11 +56,11 @@ CRITICAL RULES:
         NEW APPROACH: Uses Azure Search + Gremlin for context before SQL generation
         """
         print("\n" + "="*80)
-        print("🗄️  STEP 2: DATABASE AGENT - SQL Generation & Execution")
+        print("\ud83d\uddc4\ufe0f  STEP 2: DATABASE AGENT - SQL Generation & Execution")
         print("="*80)
         try:
-            # Step 1: Resolve entities and expand context via Azure Search + Gremlin
-            print("\n🔄 Step 2.1: Resolving context (Azure Search + Gremlin)...")
+            # Step 1: Resolve entities and expand context via Azure Search + Neo4j
+            print("\n\ud83d\udd04 Step 2.1: Resolving context (Azure Search + Gremlin)...")
             logger.info(f"\ud83d\udd0d Resolving context for query: {user_query}")
             resolved_context = self.resolver.resolve_query_context(user_query)
             
@@ -124,7 +124,7 @@ CRITICAL RULES:
     
     def _generate_sql_with_context(self, user_query: str, resolved_context: Dict[str, Any]) -> str:
         """
-        Generate SQL query using LLM with full context from Azure Search + Gremlin
+        Generate SQL query using LLM with full context from Azure Search + Neo4j
         
         This replaces the old _generate_sql_query method that used hardcoded schema
         """
@@ -257,7 +257,7 @@ CHART-SPECIFIC GUIDELINES:
 - For PieChart: SELECT category_field, SUM(metric) AS value ... GROUP BY category_field LIMIT 10
 - For LineChart: SELECT date_field, SUM(metric) AS value ... ORDER BY date_field LIMIT 50
 - For BarChart: SELECT category_field, SUM(metric) AS value ... GROUP BY category_field ORDER BY value DESC LIMIT 20
-- For GeoChart: SELECT state, SUM(metric) AS value FROM metrics JOIN locdim ... GROUP BY state
+- For GeoChart: SELECT state, SUM(m.metric) AS value FROM metrics m JOIN location l ON m.location = l.location ... GROUP BY state
 - For ScatterChart: SELECT numeric_field_1, numeric_field_2 LIMIT 100
 - Always use appropriate aggregation (SUM, AVG, COUNT)
 - Always include LIMIT clause
