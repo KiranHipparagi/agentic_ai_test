@@ -1,0 +1,231 @@
+Planalytics – Logic Document
+
+Glossary (Datasets definitions):
+Metrics – This is the weekly WDD and Normal Demand data for each product and store. This data is to be used to analyze spikes or dip in demand due to weather and only weather. The metric numbers are not the actual demand numbers but are numbers to be used to see the trends. Referred to as Metric Dataset.
+Cal – Calendar data set containing week ending dates for last few years with corresponding year, month, week number and quarter details. Referred to as Calendar Dataset.
+Phier – Product hierarchy dataset containing department, category and product hierarchy.  This dataset is augmented with a unique product id, shelf life with storage (Freezer, refrigerator etc.) for perishable products, unit of measurement details. Referred to as Product Hierarchy Dataset.
+LocDim – Location data for each store giving details like Region, Market, State and LatLong information of the stores. Referred as Locations Dataset
+Events– Web scraped events data for last few years (since Jan 2023) and a year (2026) in future and contains event name, type and date. The event data is already mapped with the store in the proximity of that event by using lat long values. Referred to as Events Dataset.
+WeeklyWeather – This is weather data obtained from weather portal on the internet. It contains weekly weather data including heatwave and cold spell flags. This data is mapped with stores in proximity to the weather stations. Referred as WeeklyWeather Dataset.
+Sales – This is synthetic data generated for weekly sales of products of interest and Captures transactional sales data at the store and product level. It provides visibility into units sold, revenue generated, and discounts applied. Used to measure performance and analyze customer purchasing trends.This data has been prepared to follow the demand trends but with noise introduced to make it realistic. Referred to as Sales Dataset.
+Spoilage Report– Tracks product spoilage across batches and stores. It highlights wastage quantities, percentages, and reasons for spoilage. Useful for monitoring losses, improving inventory control, and reducing waste. Referred to as Spoilage Dataset.
+Batches– Maintains detailed records of product batches received by stores. It includes inventory, valuation, and lifecycle information to support stock management. Helps in tracking expiry, manufacturing, and weekly stock balances. Referred to as Batches Dataset.
+Batch Stocking Tracking– Focuses on weekly monitoring of stock movements for each batch. It records inflows, opening balances, and closing balances to ensure accurate stock reconciliation. Supports operational planning and supply chain efficiency. Referred to as Batch Stocking Tracking Dataset.
+
+Definitions(As confirmed by Planalytics): 
+•	LY (Last Year): Refers to the previous year using NRF calendar. If you are in 2025, then refer to 2024 as per NRF.   
+•	LQ (Last Quarter): Refers to the last quarter using NRF calendar. If you are in 3rd quarter of 2025 then refer to the 2nd quarter of 2025 as per NRF.   
+•	LM (Last Month): Refers to the previous month using NRF calendar. If you are in Nov,2025 then refer to Oct,2025 as per NRF.   
+•	LW (Last Week): Refers to the last week using the NRF calendar. If the current weekending date is 15th Nov,2025 then refer to the last week which is 8th Nov,2025 weekending date.   
+•	NY (Next Year): Refers to the next year using NRF calendar. If you are in 2025, then refer to 2026 as per NRF.   
+•	NQ (Next Quarter): Refers to the next quarter using NRF calendar. If you are in 3rd quarter of 2025 then refer to the 4th quarter of 2025 as per NRF.   
+•	NM (Next Month): Refers to the next month using NRF calendar. If you are in Nov,2025 then refer to Dec,2025 as per NRF.   
+•	NW (Next Week): Refers to the upcoming week using NRF calendar. If the current weekending date is 15th Nov,2025 then refer to the next week which is 22nd Nov,2025 weekending date. 
+ 
+
+ 
+Formulas:
+All below calculations will be based on NRF calendar 
+1.	For short term planning (less than 4 weeks) future predictions should use WDD Vs Normal Metric 
+(SUM(metrics.metric) - SUM(metrics.metric_nrm)) / SUM(metrics.metric_nrm) 
+ 
+2.	For long term planning (more than 4 weeks) future predictions should be used by WDD Vs LY Metric. 
+ (SUM (metrics.metric) - SUM (metrics.metric_ly)) / SUM (metrics.metric_ly) 
+ 
+3.	For historical reporting, we should also consider WDD vs LY to understand year-over-year comparisons. 
+(SUM (metrics.metric) - SUM (metrics.metric_ly)) / SUM (metrics.metric_ly) 
+4.	For Event base calculations, we will consider the below approach
+1. From Events dataset, identify the Last year's similar events If the store is not 	directly mapped, fall back to market-level proximity and extract their event weeks.
+2. From Sales Inventory dataset, compute sales for
+	• the historical festival weeks (last year)
+	• the corresponding prior weeks (for comparison)
+3.For last year’s event weeks, compute product-level sales uplift vs their prior weeks at Store/Market for all products and Identify products that repeatedly showed sales uplift
+4. Use Sales Inventory to check current stock levels or patterns of low availability for those high-uplift products.
+5.Present the top products expected to experience the highest demand and highlight any that may require inventory reinforcement
+
+
+Assumptions:
+1.	Date context given to agents –  
+This weekend: 08/11/2025 (8 Nov,2025) 
+2.	As LLMs use their powerful intelligence to generate a response within the context boundaries defined, the responses may vary multiple execution of a prompt. Probable approach for each prompt is a suggestive approach and LLM may follow different steps each time. 
+3.	Filters applied section in a response acts a guide to explain exact datasets being referred to by agents 
+4.	Few prompts have been modified to enable the chatbot to return a meaningful response backed by data. Such changes have been marked with *. 
+5.	Given our entire architecture is based on multi agent framework (Agentic AI), AI learns during the process leading to higher accuracy with time, especially for complex prompts requiring multiple integrations.  
+ 
+
+Prompts:
+Persona A - Store / Supply‑Chain Manager
+Future – Short Term
+       1. How could the expected weather impact product demand in the next 1–2 weeks, and    	which items may need slight replenishment to avoid stockouts?
+
+	Step 1: Use WDD vs Normal (short-term ≤ 4 weeks). From Calendar Dataset, resolve next 	1–2 week end_dates.
+	Step 2: From the Product Hierarchy Dataset, select all active products and categories of 	interest.
+	Step 3: Join Metric → Product Hierarchy → Calendar → Locations for those weekend dates.
+	Step 4: From Weekly Weather Dataset, identify markets with notable weather deviations 	(heatwave/cold spell flags).
+	Step 5: Join Sales Inventory Dataset to check opening/closing inventory and sales trends 	for those same weeks.
+	Step 6: Aggregate to product/store level, and flag items with high WDD uplift + low 		remaining inventory as potential stockout risks.
+Future – Long Term
+       1. Which categories in my store ST9611 are likely to see higher-than-last year demand next    month due to the weather, and may require extra availability?
+
+	Step 1: Use WDD vs LY (long-term > 4 weeks). Resolve the next month's weekend date via 	Calendar Dataset.
+	Step 2: From Product Hierarchy Dataset, identify categories.
+Step 3: From LocDim, select location ‘ST9611’
+	Step 4: Join Metric → Product Hierarchy → Calendar → Location for current week’s end date
+	Step 5: Link Weekly Weather Dataset to capture temperature or weather event deviations 	near those stores.
+	Step 6: Rank categories by positive WDD uplift
+Step 7: Present top categories expected to see higher-than-normal demand; recommend small availability increases.
+Historical
+       1. Which perishable products had the strongest weather-driven demand over the past 6   weeks in tampa, fl market, and do any of them show low availability risk?
+Step 1: Use WDD vs LY (historical). From Calendar, select the last 6 week-ending dates.
+Step 2: From Phier, filter perishable products
+Step 3: From LocDim, select ‘tampa,fl’ market.
+Step 4: Use WeeklyWeather to bring in weather context (heatwave/cold-spell flags) in the 6-week window.
+Step 5: Join Metrics → Phier → Calendar → LocDim for the 6 weeks and compute WDD trends.
+Step 6: Join SalesInventory to identify average on-hand inventory, stockouts, or declining inventory patterns for each perishable item.
+Step 7:  Flag perishable products with strong positive WDD but low availability.
+
+
+Persona B - Chief Financial Officer (Capital & Risk)
+Future – Short Term
+1.	Which regions may experience below-normal demand for Tomatoes next week due to weather patterns?
+Step 1: Use WDD vs Normal (short-term ≤ 4 weeks t). From Calendar, select the next week-ending date.
+Step 2: From Phier, filter the Tomatoes product.
+Step 3: From LocDim, filter regions.
+Step 4: Use WeeklyWeather for the forecast week to bring in relevant weather flags expected to reduce demand.
+Step 5: Join Metrics →Phier → Calendar → LocDim for the forecast week and compute regional-level WDD values for Tomatoes.
+Step 6: Flag regions with negative WDD vs Normal indicating below-normal demand next week.
+
+
+
+Future – Long Term
+1.	How is the weather going to affect the Home Improvement sector in the next quarter compared to the same period last year?
+ Step 1: Pick WDD vs LY (planning >4 weeks). Resolve the next calendar quarter year, quarter via cal and collect its end_dates.
+Step 2: From phier filter product sector = 'Home Improvement’
+ Step 3: Join metrics → phier → cal → locdim for the quarter end dates.
+Step 4:Assess WDD impact on product and market.
+ Step 5:Aggregate to desired grain market, rank by wdd_pct_ly (top uplift and top 	suppression).
+2.	Last year was a great season for Winter Boots across many markets. What markets are going to have the biggest year-over-year weather-driven risks for Boots in the coming winter season (Nov/Dec/Jan)
+Step 1: Use WDD vs LY (season planning >4 weeks). Determine the upcoming winter months (Nov/Dec/Jan)
+ Step 2: From phier filter product sector = 'Total Boots’
+ Step 3 : Join metrics for those winter end_dates to phier and locdim.
+Step 4:Compute WDD vs LY on the market.
+ Step 5: Rank markets by wdd_pct_ly descending (largest risk uplift) and ascending (largest 	suppression).
+       3.    Considering the impact of weather last spring, how should we plan for the weather- driven demand impacts on allergy relief for this coming spring (Feb/Mar/Apr)?
+               Step 1: Use WDD vs LY (planning >4 weeks). Determine upcoming spring months 	(Feb/Mar/Apr) via Calendar Dataset.
+	Step 2: From Product Hierarchy Dataset, filter product = ‘Allergy Relief’.
+	Step 3: Join Metrics → Product Hierarchy → Calendar → Locations for the spring end dates.
+	Step 4: Assess WDD impact on product and market.
+	Step 5: Aggregate and rank by market to identify the strongest uplift or decline.
+	Step 6: Present planning recommendations highlighting regions or markets likely to need 	higher or lower stock levels.
+Historical
+        1. How much did the weather affect demand in the Apparel sector this past summer      (May/Jun/Jul) compared to the prior summer?
+
+	Step 1: Use WDD vs LY (historical). Select last summer months (May/Jun/Jul) via 		Calendar Dataset.
+	Step 2: From Product Hierarchy Dataset, filter product sector = ‘Apparel’.
+	Step 3: Join Metrics → Product Hierarchy → Calendar → Locations for those summer end 	dates.
+	Step 4: Assess WDD impact on the apparel sector.
+	Step 5: Aggregate and rank by uplift and suppression to identify favorable and 		unfavorable weather impacts.
+	Step 6: Present results summarized by region/markets.
+          2. Which markets (locations) had the most favorable weather impact on restaurant traffic this Fall (Aug/Sep/Oct) compared to last Fall?
+
+	Step 1: Use WDD vs LY (historical). Select Fall months (Aug/Sep/Oct) via Calendar 		Dataset.
+	Step 2: From Product Hierarchy Dataset, filter product sector = ‘Restaurant Sector’.
+Step 3: Join Metrics → Product Hierarchy → Calendar → Locations for Fall end dates.
+	Step 4: Assess WDD impact on market.
+	Step 5: Rank markets by uplifting and suppression to identify top positive and negative 	performers.
+	Step 6: Present results highlighting top performing markets and underlying categories 	driving uplift.
+       3. Based on the weather, what grocery products had the best year-over-year performance     last quarter?
+
+	Step 1: Use WDD vs LY (historical). Identify the last completed quarter via Calendar 		Dataset and collect corresponding end dates.
+	Step 2: From Product Hierarchy Dataset, filter product department = ‘Grocery’.
+	Step 3: Join Metrics → Product Hierarchy → Calendar → Locations for the quarter end 	dates.
+	Step 4: Assess WDD impact on product.
+	Step 5: Aggregate and rank by uplift to identify best-performing products.
+	Step 6: Present summary of top positive and negative weather impacts with confidence 	indicators.
+Event Sales	
+A music festival is expected to drive increased foot traffic in the store ST3700 Nashville, tn market, which products are likely to see the highest demand?
+Step 1: From Events dataset, identify the similar events of last year and confirm its mapped proximity to store ST3700. If the store is not directly mapped, fall back to market-level proximity (Nashville, TN market) and extract their event weeks.
+Step 2: From Sales Inventory dataset, compute sales for
+ • the historical festival weeks (last year)
+ • the corresponding prior weeks (for comparison)
+ Step 3: For last year’s event weeks, compute product-level sales uplift vs their prior weeks at Store/Market for all products and Identify products that repeatedly showed sales uplift
+ Step 4: Use Sales Inventory to check current stock levels or patterns of low availability for those high-uplift products.
+ Step 5: Present the top products expected to experience the highest demand and highlight any that may require inventory reinforcement.
+
+Persona C - Planner/ Regional Operations Lead
+Future – Short Term
+      1. Which markets in the South-Central region will show the highest weather-driven demandfor the next 2 weeks?
+Step 1: Use WDD vs Normal (short-term ≤ 4 weeks). From Calendar, select the next week-ending date.
+Step 2: From LocDim filter markets in the South-Central region.
+Step 3: Join Metrics → Calendar → LocDim → WeeklyWeather for the next-2-week end_dates to capture forecasted weather deviations.
+Step 4: Aggregate to market level and rank markets by short-term WDD uplift..
+
+Future – Long Term
+      1. Which store location had the highest average WDD for perishable products over the 	 last next 8 weeks?
+	Step 1: Pick WDD vs LY (planning >4 weeks). Resolve the next calendar and select the last 8 	week end_dates.
+	Step 2: From Phier filter perishable products.
+	Step 3: From LocDim list stores.
+	Step 4: Join Metrics → Phier → Calendar → LocDim for the 4-week window..
+	Step 5: Compute average WDD per store across perishable products..
+	Step 6: Rank stores by average WDD and present top locations.
+
+Historical
+      1. Which product categories in the Northeast have shown lower demand over the last 3 	weeks 	due to 	cold spell?
+
+Step 1: Baseline: WDD vs LY (historical reporting). From Calendar select the last three week 	end_dates.
+	Step 2: From WeeklyWeather identify stores in the Northeast with cold spell flags during 	those weeks.
+	Step 3: From Phier get categories.
+	Step 4: Join Metrics → Phier → Calendar → LocDim → WeeklyWeather for those weeks and 	Northeast stores.
+	Step 5: Identify categories with consistently negative WDD across the three weeks in cold-	flagged locations.
+	Step 6: Present categories showing cooling demand and validate with SalesInventory.
+2. Which regions show inconsistent demand trends for the same product category over the 	past 2 weeks?
+
+	Step 1: Baseline: WDD vs LY (historical short-window review). From Calendar collect the 	last 2 week end_dates.
+	Step 2: From Phier select the product categories to evaluate.
+	Step 3: From LocDim map regions.
+	Step 4: Join Metrics → Phier → Calendar → LocDim for the two weeks.
+	Step 5: For each region × category, compare week-over-week WDD signs and magnitudes 	and flag regions where the pattern flips or shows high volatility.
+	Step 6: Present regions with inconsistent patterns.
+
+Persona D – Marketing
+Future – Short Term
+      1. The next weekend is expected to be extremely warm in North Carolina markets. Which products should we strategically promote to capitalize on this heat?
+Step 1: Use WDD vs Normal (short-term ≤ 4 weeks). From Calendar, select the next weekend end_dates.
+Step 2: From Phier, filter products.
+Step 3: From WeeklyWeather, identify North Carolinemarkets with heatwave or unusually high-temperature flags for the upcoming weekend.
+Step 4: Join Metrics → Phier → Calendar → LocDim for the weekend end_dates and calculate short-term WDD vs Normal for products in heat-flagged locations.
+Step 5: Join Sales& Inventory to check recent sales velocity and current on-hand inventory for products.
+Step 6: Flag products that show positive short-term WDD uplift, historical uplift during past heat weekends, and sufficient inventory to support promotions.
+Step 7: Exclude products with low stock, slow replenishment lead-time, or low margin if promotion would not be profitable.
+Step 8: Rank candidates by combined signal: WDD uplift, recent sales momentum, inventory sufficiency, and margin. Produce top N products perstore.
+Step 9: Recommend specific promotion types per product (price discount, bundle, visibility/premise placement) and quick operational steps (temporary reallocation from nearby stores, expedited replenishment) for top-priority stores.
+
+Future – Long Term
+1.In the Northeast, which markets are anticipated to see the most considerable uplift in demand driven by weather over the next month, and how can we leverage this in our marketing?
+Step 1:Use WDD vs LY for long-term planning (> 4 weeks). From Calendar, select the next month week-ending dates.
+Step 2: From LocDim, filter markets in the Northeast region.
+Step 3 : From WeeklyWeather, pull long-range weather signals for the forecast window for Northeast markets.
+Step 4:  Join Metrics → Phier → Calendar → LocDim and compute long-term forecasted WDD vs LY uplift for all products in northeast markets across the next month.
+Step 5: Rank markets by WDD uplift
+Step 6: Recommend long-term strategies such as seasonal campaigns, ad calendars, email sequences, and store-market-specific promotions aligned with projected weather-driven behavior.
+2.	How might the forecasted heatwave next month inSouthwest region influence consumer demand for ice cream, and what marketing strategies can we implement to take advantage of this?
+
+Step 1: Use WDD vs LY for long-term planning (>4 weeks). From Calendar, select the forecasted period covering the expected heatwave window.
+Step 2: From LocDim, filter all stores located in the Southwest region.
+Step 3: From Weekly Weather, identify stores in the Southwest flagged for forecasted heatwave.
+Step 4: Join Metrics → Phier → Calendar → LocDim and compute projected WDD vs LY uplift for all Ice Cream products for the heatwave period.
+Step 5: Rank Ice Cream products by projected uplift.
+Step 6: From Inventory, identify Ice Cream products with stable inventory vs those needing pre-heatwave replenishment.
+Step 7: Map high-uplift Ice Cream products to market-level strategies such as localized promotions, digital push, targeted ads, and seasonal bundles.
+Historical
+1. Which markets in northwestexperienced the most favorable weather-related impacts on restaurant traffic this fall (August/Sept/Oct) in comparison to last fall, and how can we align our marketing efforts accordingly?
+Step 1: Use WDD vs LY for historical reporting. From Calendar, select all week-ending dates for August, September, and October for both the current Fall and last Fall.
+Step 2: From LocDim, extract Market → Store mapping to support market-level aggregation.
+Step 3:Using WeeklyWeather, ensure only weeks with valid weather mapping for allrelevant stores are included (heatwaves, pleasant-weather weeks, cold-spell relief, etc.).
+Step 4:  Join Metrics → Calendar → LocDim for the selected Fall periods and compute market-level WDD vs LY for restaurant sector.
+Step 5: Aggregate WDD by market, compute YoY Fall differences, and identify which markets saw strong favorable weather impact (strong positive uplift).
+Step 6: Rank markets from highest positive uplift to lowest.
+Step 7: For the top uplift markets, localized promotions, event tie-ins, push notifications, drive-thru campaigns, and digital ads optimized for high-traffic weather periods.
+
+ 
+

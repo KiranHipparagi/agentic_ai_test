@@ -32,11 +32,12 @@ class Settings(BaseSettings):
     def DATABASE_URL(self) -> str:
         return f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
     
-    # Cosmos DB Gremlin API (Knowledge Graph)
-    COSMOS_ENDPOINT: str
-    COSMOS_KEY: str
-    COSMOS_DATABASE: str
-    COSMOS_GRAPH: str
+    # Azure Cosmos DB Gremlin Configuration (Knowledge Graph)
+    # Uses the same variable names as build_planalytics_gremlin_async.py
+    COSMOS_ENDPOINT: Optional[str] = None  # ✅ CORRECT - loads from .env
+    COSMOS_KEY: Optional[str] = None       # ✅ CORRECT - loads from .env
+    COSMOS_DATABASE: str = "planalytics"
+    COSMOS_GRAPH: str = "planalytics_graph"
     COSMOS_PORT: int = 443
     
     # Azure OpenAI (Main LLM for chat and SQL generation)

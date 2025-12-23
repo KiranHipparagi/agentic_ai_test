@@ -1,7 +1,7 @@
 """
-Enhanced Master Orchestrator using LangChain/LangGraph
+Master Orchestrator using LangChain/LangGraph
 Handles normal conversations and smart chart generation
-NOW WITH: Smart LLM-powered visualization option!
+Smart LLM-powered visualization option!
 """
 
 from typing import Dict, Any, List, Optional, TypedDict, Annotated
@@ -37,9 +37,9 @@ class AgentState(TypedDict):
     status: str
 
 
-class EnhancedOrchestratorAgent:
+class OrchestratorAgent:
     """
-    Enhanced Orchestrator with LangChain/LangGraph
+    Orchestrator with LangChain/LangGraph
     
     Features:
     1. Intent Detection - Determines if user wants data, chart, or just chat
@@ -76,7 +76,7 @@ class EnhancedOrchestratorAgent:
         # LLM-powered visualization agent
         self.visualization_agent = VisualizationAgent()
         
-        logger.info(f"✅ Enhanced Orchestrator initialized with LangGraph")
+        logger.info(f"✅ Orchestrator initialized with LangGraph")
         logger.info(f"   Visualization Mode: SMART (LLM-Powered)")
         
         # Build LangGraph workflow
@@ -132,7 +132,7 @@ class EnhancedOrchestratorAgent:
             print("🚀 ORCHESTRATOR - Multi-Agent Pipeline Started")
             print("#"*80)
             print(f"📥 Incoming Query: {query}")
-            logger.info(f"🎯 Enhanced Orchestrator received: {query[:100]}")
+            logger.info(f"🎯 Orchestrator received: {query[:100]}")
             
             # Initialize state
             initial_state: AgentState = {
@@ -244,7 +244,7 @@ class EnhancedOrchestratorAgent:
             state["intent"] = "conversation"
             return state
         
-        # ✅ ENHANCED: Check for ANY visualization request
+        # ✅ Check for ANY visualization request
         viz_triggers = [
             "chart", "graph", "visualize", "visualization", "plot", "map", "diagram",
             "pie", "bar", "line", "area", "scatter", "histogram", "gauge", "table",
@@ -317,7 +317,7 @@ Intent:"""
         return state
     
     def _detect_chart_type(self, query: str) -> str:
-        """Enhanced chart type detection with better keyword matching"""
+        """chart type detection with better keyword matching"""
         query_lower = query.lower()
         
         # Priority 1: Explicit chart type mentions
@@ -381,16 +381,35 @@ Intent:"""
         
         # Use LLM for other conversational queries
         try:
-            system_msg = """You are Plan IQ, a friendly supply chain intelligence assistant.
+            system_msg = """You are Plan IQ, a friendly RETAIL supply chain intelligence assistant.
 Handle conversational queries naturally. Be helpful and concise.
 
-Your capabilities:
-- Analyze supply chain data (sales, inventory, events, weather)
-- Generate visualizations (charts, graphs, maps)
-- Provide insights and recommendations
-- Answer questions about data
+=== CURRENT DATE CONTEXT (CRITICAL) ===
+This Weekend (Current Week End Date): November 8, 2025 (2025-11-08)
+- "Next week" means week ending November 15, 2025
+- "Last week" means week ending November 1, 2025
+- "Next month" means December 2025
+- "Last month" means October 2025
+- Current Year: 2025 | Last Year (LY): 2024
 
-Keep responses brief and professional."""
+=== NRF CALENDAR CONTEXT ===
+- You work with retail industry data using NRF (National Retail Federation) Calendar
+- NRF calendar uses 4-5-4 week patterns per quarter (retail standard)
+- All week references are based on NRF calendar, not standard ISO weeks
+- Weeks end on Saturday (end_date), start on Sunday
+- You serve retail supply chain managers and planners
+
+=== SEASONS (NRF) ===
+- Spring: Feb/Mar/Apr | Summer: May/Jun/Jul
+- Fall: Aug/Sep/Oct | Winter: Nov/Dec/Jan
+
+Your capabilities:
+- Analyze retail supply chain data (sales, inventory, events, weather)
+- Generate visualizations (charts, graphs, maps) with NRF calendar context
+- Calculate WDD (Weather Driven Demand) impacts
+- Provide insights and recommendations for retail operations
+Keep responses brief and professional.
+"""
             
             response = self.client.chat.completions.create(
                 model=settings.OPENAI_MODEL_NAME,
@@ -412,7 +431,7 @@ Keep responses brief and professional."""
         return state
     
     def _query_database(self, state: AgentState) -> AgentState:
-        """Enhanced database query with chart-aware logic"""
+        """database query with chart-aware logic"""
         try:
             query = state["query"]
             context = state["context"]
@@ -793,4 +812,4 @@ Provide a comprehensive answer with insights and recommendations based STRICTLY 
 
 
 # Global instance
-enhanced_orchestrator = EnhancedOrchestratorAgent()
+orchestrator = OrchestratorAgent()

@@ -10,32 +10,70 @@ from sqlalchemy import or_, and_
 class EventsAgent:
     """Agent specialized in event impact analysis - Enhanced with real database queries"""
     
+    # Static current date context (Nov 8, 2025)
+    CURRENT_WEEKEND_DATE = "2025-11-08"
+    
     def __init__(self):
         self.client = AzureOpenAI(
             api_key=settings.OPENAI_API_KEY,
             api_version=settings.AZURE_OPENAI_API_VERSION,
             azure_endpoint=settings.OPENAI_ENDPOINT
         )
-        self.system_prompt = """You are an events analysis expert for supply chain planning.
-        Analyze calendar events, holidays, and special occasions to forecast demand changes.
-        
-        FOLLOW THIS LOGIC FOR EVENT ANALYSIS:
-        Step 1: Identify Last Year's similar event and confirm proximity to store. If not mapped, fallback to Market level.
-        Step 2: Compute sales for historical festival weeks (last year) vs prior weeks.
-        Step 3: Compute product-level sales uplift vs prior weeks. Identify products with repeated uplift.
-        Step 4: Check current stock levels for high-uplift products.
-        Step 5: Recommend top products for demand and highlight inventory needs.
-        
-        Consider: event type, duration, historical patterns, and regional significance.
-        Provide specific insights with event names, dates, and impact predictions."""
+        self.system_prompt = """You are an events analysis expert for RETAIL SUPPLY CHAIN planning.
+Analyze calendar events, holidays, and special occasions to forecast demand changes.
+
+=== CURRENT DATE CONTEXT ===
+This Weekend (Current Week End Date): November 8, 2025 (2025-11-08)
+- "Next week" = November 15, 2025 | "Last week" = November 1, 2025
+- "Next month" = December 2025 | "Last month" = October 2025
+- Current Year: 2025 | Last Year (LY): 2024
+
+=== EVENT-BASED DEMAND ANALYSIS LOGIC ===
+Follow these steps for event impact analysis:
+
+Step 1: IDENTIFY HISTORICAL EVENTS
+- From Events dataset, identify Last Year's similar events
+- Confirm proximity to store using lat/long mapping
+- If store not directly mapped, fallback to Market level proximity
+- Extract their event weeks from calendar
+
+Step 2: COMPUTE HISTORICAL SALES
+- From Sales/Inventory dataset, compute sales for:
+  • Historical festival weeks (last year)
+  • Corresponding prior weeks (for comparison baseline)
+
+Step 3: COMPUTE PRODUCT-LEVEL UPLIFT
+- For last year's event weeks, compute product-level sales uplift vs prior weeks
+- Calculate at Store/Market level for all products
+- Identify products that repeatedly showed sales uplift during events
+
+Step 4: CHECK CURRENT STOCK LEVELS
+- Use Sales/Inventory to check current stock levels
+- Identify patterns of low availability for high-uplift products
+- Flag products at risk of stockout during upcoming event
+
+Step 5: PRESENT RECOMMENDATIONS
+- Present top products expected to experience highest demand
+- Highlight products requiring inventory reinforcement
+- Provide specific reorder quantities based on historical uplift
+
+=== EVENT TYPES TO CONSIDER ===
+- Holidays (Federal, State, Religious)
+- Sports events (Super Bowl, March Madness, etc.)
+- Music festivals and concerts
+- Local community events
+- Seasonal events (Back to School, Summer Kickoff)
+
+Provide specific insights with event names, dates, locations, and demand impact predictions."""
     
     def analyze(self, query: str, location_id: str = None, timeframe_days: int = 90) -> Dict[str, Any]:
         """Analyze event impact on demand with real database queries"""
         try:
-            start_date = datetime.now()
+            # Use static current date (Nov 8, 2025) instead of datetime.now()
+            start_date = datetime(2025, 11, 8)  # Current weekend date
             end_date = start_date + timedelta(days=timeframe_days)
             
-            logger.info(f"Events Agent analyzing query: {query}")
+            logger.info(f"Events Agent analyzing query: {query} (date context: {start_date.strftime('%Y-%m-%d')})")
             
             with get_db() as db:
                 # Build query based on user input

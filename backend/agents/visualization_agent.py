@@ -1,7 +1,5 @@
 """
 🚀 VISUALIZATION AGENT - LLM-Powered Chart Generation
-Uses Azure OpenAI to dynamically generate chart configs instead of hard-coded logic
-~100 lines vs 1000+ lines of hard-coded rules
 """
 
 from typing import Dict, Any, List
@@ -14,7 +12,6 @@ import json
 class VisualizationAgent:
     """
     LLM-powered visualization agent that generates chart configs dynamically
-    NO hard-coded rules - the LLM analyzes data and creates optimal charts
     """
     
     def __init__(self):

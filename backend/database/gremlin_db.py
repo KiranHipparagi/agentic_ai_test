@@ -1,19 +1,14 @@
-from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
-from gremlin_python.process.anonymous_traversal import traversal
-from gremlin_python.process.graph_traversal import __
-from gremlin_python.process.traversal import T, P, Order, Column, Operator
+from gremlin_python.driver import client, serializer
 from typing import List, Dict, Any, Optional
-from contextlib import contextmanager
 from core.config import settings
 from core.logger import logger
-import sys
+
 
 class GremlinConnection:
-    """Cosmos DB Gremlin API connection manager"""
+    """Cosmos DB Gremlin API connection manager using Client (same as build script)"""
     
     def __init__(self):
-        self.g = None
-        self.conn = None
+        self.gremlin_client = None
         self._connected = False
         
     def _connect(self):
@@ -22,23 +17,40 @@ class GremlinConnection:
             return
 
         try:
-            # Construct the connection URL
-            # wss://<endpoint>:<port>/gremlin
-            url = f"wss://{settings.COSMOS_ENDPOINT}:{settings.COSMOS_PORT}/gremlin"
+            # Get endpoint from settings (same as build_planalytics_gremlin_async.py)
+            # COSMOS_ENDPOINT is just the host: your-cosmos-account.gremlin.cosmos.azure.com
+            endpoint = settings.COSMOS_ENDPOINT
+            cosmos_key = settings.COSMOS_KEY
+            cosmos_database = settings.COSMOS_DATABASE
+            cosmos_graph = settings.COSMOS_GRAPH
+            cosmos_port = settings.COSMOS_PORT
             
-            # Create the connection
-            # Username is usually /dbs/<db>/colls/<coll>
-            username = f"/dbs/{settings.COSMOS_DATABASE}/colls/{settings.COSMOS_GRAPH}"
-            password = settings.COSMOS_KEY
+            # If endpoint is empty or placeholder, skip connection
+            if not endpoint or endpoint == "" or "your-cosmos" in endpoint:
+                logger.warning("⚠️ Gremlin endpoint not configured - skipping connection")
+                self._connected = False
+                return
             
-            self.conn = DriverRemoteConnection(url, 'g', username=username, password=password)
-            self.g = traversal().withRemote(self.conn)
+            # Connection URL format: wss://<host>:<port>/gremlin
+            url = f"wss://{endpoint}:{cosmos_port}/gremlin"
+            
+            # Username format: /dbs/<database>/colls/<graph>
+            username = f"/dbs/{cosmos_database}/colls/{cosmos_graph}"
+            
+            # Use the same Client approach as build_planalytics_gremlin_async.py
+            self.gremlin_client = client.Client(
+                url,
+                'g',
+                username=username,
+                password=cosmos_key,
+                message_serializer=serializer.GraphSONSerializersV2d0()
+            )
+            
             self._connected = True
-            logger.info("✅ Cosmos DB Gremlin connection established successfully")
+            logger.info(f"✅ Cosmos DB Gremlin connection established: {endpoint}")
         except Exception as e:
             logger.warning(f"⚠️ Gremlin connection failed: {e}")
-            self.conn = None
-            self.g = None
+            self.gremlin_client = None
             self._connected = False
 
     def ensure_connected(self) -> bool:
@@ -49,10 +61,23 @@ class GremlinConnection:
 
     def close(self):
         """Close Gremlin connection"""
-        if self.conn:
-            self.conn.close()
+        if self.gremlin_client:
+            self.gremlin_client.close()
             self._connected = False
             logger.info("Gremlin connection closed")
+
+    def submit_query(self, query: str) -> List[Dict]:
+        """Submit a Gremlin query and return results"""
+        if not self.ensure_connected():
+            return []
+        
+        try:
+            result_set = self.gremlin_client.submit(query)
+            results = result_set.all().result()
+            return results
+        except Exception as e:
+            logger.error(f"Gremlin query error: {e}")
+            return []
 
     def create_supply_chain_graph(self, data: Dict[str, Any]) -> None:
         """Create supply chain relationships"""
@@ -61,40 +86,13 @@ class GremlinConnection:
             return
             
         try:
-            # Simplified creation - in production use coalesce for upsert
-            # Creating vertices
-            g = self.g
+            # Create Product vertex
+            product_query = f"g.V().has('Product', 'id', '{data['product_id']}').fold().coalesce(unfold(), addV('Product').property('id', '{data['product_id']}').property('name', '{data.get('product_name', '')}'))"
+            self.submit_query(product_query)
             
-            # Product
-            g.V().has('Product', 'id', data['product_id']).fold().coalesce(
-                __.unfold(), 
-                __.addV('Product').property('id', data['product_id']).property('name', data['product_name'])
-            ).next()
-            
-            # Location
-            g.V().has('Location', 'id', data['location_id']).fold().coalesce(
-                __.unfold(), 
-                __.addV('Location').property('id', data['location_id']).property('name', data['location_name'])
-            ).next()
-            
-            # Weather (simplified, usually time-bound)
-            g.addV('Weather').property('conditions', data['weather_conditions']).property('temp', data['temperature']).next()
-            
-            # Event
-            g.V().has('Event', 'name', data['event_name']).fold().coalesce(
-                __.unfold(), 
-                __.addV('Event').property('name', data['event_name']).property('type', data['event_type'])
-            ).next()
-            
-            # Edges
-            # Product -> Location
-            g.V().has('Product', 'id', data['product_id']).as_('p').V().has('Location', 'id', data['location_id']).as_('l').coalesce(
-                __.outE('STORED_AT').where(__.inV().as_('l')),
-                __.addE('STORED_AT').from_('p').to('l')
-            ).next()
-            
-            # Location -> Weather (simplified)
-            # Location -> Event
+            # Create Location vertex
+            location_query = f"g.V().has('Location', 'id', '{data['location_id']}').fold().coalesce(unfold(), addV('Location').property('id', '{data['location_id']}').property('name', '{data.get('location_name', '')}'))"
+            self.submit_query(location_query)
             
             logger.info(f"Created graph nodes for {data['product_id']}")
             
@@ -107,28 +105,44 @@ class GremlinConnection:
             return []
             
         try:
-            # Equivalent to:
-            # MATCH (p:Product {id: $product_id})-[:STORED_AT]->(l:Location {id: $location_id})
-            # ...
-            
-            result = self.g.V().has('Product', 'id', product_id).out('STORED_AT').has('Location', 'id', location_id).project('product', 'location').by(__.valueMap()).by(__.valueMap()).toList()
-            
-            # This is a simplified return. In a real app we'd traverse to weather/events
-            return result
+            query = f"g.V().has('Product', 'id', '{product_id}').out('STORED_AT').has('Location', 'id', '{location_id}').valueMap(true)"
+            results = self.submit_query(query)
+            return results
         except Exception as e:
             logger.error(f"Gremlin query error: {e}")
             return []
 
     def expand_product_context(self, product_ids: List[str]) -> List[Dict[str, Any]]:
         """Expand product context by finding related products in same category"""
-        if not self.ensure_connected():
+        if not self.ensure_connected() or not product_ids:
+            return []
+        
+        # Convert Azure Search IDs (PROD_1 → P_1) to match graph structure
+        gremlin_ids = []
+        for pid in product_ids:
+            try:
+                if isinstance(pid, str) and pid.startswith('PROD_'):
+                    gremlin_ids.append(f"P_{pid.replace('PROD_', '')}")
+                elif isinstance(pid, int):
+                    gremlin_ids.append(f"P_{pid}")
+                else:
+                    gremlin_ids.append(str(pid))
+            except:
+                pass
+        
+        if not gremlin_ids:
             return []
         
         try:
-            # g.V().hasLabel('Product').has('product_id', within(ids)).out('IN_CATEGORY').in('IN_CATEGORY')...
-            traversal = self.g.V().hasLabel('Product').has('product_id', P.within(product_ids)).out('IN_CATEGORY').as_('c').in_('IN_CATEGORY').hasLabel('Product').project('product_id', 'product_name', 'category').by('product_id').by('name').by(__.select('c').values('name'))
-            
-            results = traversal.limit(50).toList()
+            # Build query: Find products → traverse to category → find other products in same category
+            ids_str = "', '".join(gremlin_ids)
+            query = f"""g.V().hasLabel('Product').has('id', within('{ids_str}'))
+                .out('IN_CATEGORY').as('c')
+                .in('IN_CATEGORY').hasLabel('Product').dedup()
+                .project('product_id', 'product_name', 'category')
+                .by('product_id').by('name').by(select('c').values('name'))
+                .limit(50)"""
+            results = self.submit_query(query)
             return results
         except Exception as e:
             logger.error(f"Gremlin expand product error: {e}")
@@ -136,31 +150,36 @@ class GremlinConnection:
 
     def expand_location_context(self, location_ids: List[str]) -> List[Dict[str, Any]]:
         """Expand location context by finding all stores in same region/market"""
-        if not self.ensure_connected():
+        if not self.ensure_connected() or not location_ids:
             return []
         
         try:
-            # Similar logic to Neo4j query
-            traversal = self.g.V().hasLabel('Store').has('store_id', P.within(location_ids)).out('IN_MARKET').as_('m').in_('IN_MARKET').hasLabel('Store').project('store_id', 'store_name', 'market').by('store_id').by('name').by(__.select('m').values('name'))
-            
-            results = traversal.limit(200).toList()
+            # Build query: Find stores → traverse to market → find other stores in same market
+            ids_str = "', '".join(location_ids)
+            query = f"""g.V().hasLabel('Store').has('id', within('{ids_str}'))
+                .out('IN_MARKET').as('m')
+                .in('IN_MARKET').hasLabel('Store').dedup()
+                .project('store_id', 'store_name', 'market')
+                .by('id').by('name').by(select('m').values('name'))
+                .limit(200)"""
+            results = self.submit_query(query)
             return results
         except Exception as e:
             logger.error(f"Gremlin expand location error: {e}")
             return []
 
     def find_related_events(self, location_ids: List[str], dates: List[str]) -> List[Dict[str, Any]]:
-        """Find events that occurred at specified locations during specified dates"""
-        if not self.ensure_connected() or not dates:
+        """Find event types (metadata only - full event occurrences in PostgreSQL)"""
+        if not self.ensure_connected():
             return []
             
         try:
-            min_date = min(dates)
-            max_date = max(dates)
-            
-            traversal = self.g.V().hasLabel('Event').has('date', P.gte(min_date)).has('date', P.lte(max_date)).where(__.out('AT_STORE').has('store_id', P.within(location_ids))).project('event_name', 'date', 'event_type').by('event_name').by('date').by('event_type')
-            
-            results = traversal.limit(100).toList()
+            # Graph stores EventType metadata only, full event data is in PostgreSQL
+            query = """g.V().hasLabel('EventType')
+                .project('event_name', 'event_type')
+                .by('name').by('type')
+                .limit(100)"""
+            results = self.submit_query(query)
             return results
         except Exception as e:
             logger.error(f"Gremlin find events error: {e}")
@@ -170,13 +189,23 @@ class GremlinConnection:
         """Get full hierarchy for a product"""
         if not self.ensure_connected():
             return {}
+        
+        # Convert to Gremlin ID format (P_1, P_2, etc.)
+        gremlin_id = f"P_{product_id}" if not product_id.startswith('P_') else product_id
             
         try:
-            result = self.g.V().has('Product', 'product_id', product_id).as_('p').out('IN_CATEGORY').as_('c').out('IN_DEPARTMENT').as_('d').project('product_id', 'product_name', 'category', 'department').by(__.select('p').values('product_id')).by(__.select('p').values('name')).by(__.select('c').values('name')).by(__.select('d').values('name')).next()
-            
-            return result
+            query = f"""g.V().has('Product', 'id', '{gremlin_id}').as('p')
+                .out('IN_CATEGORY').as('c')
+                .out('IN_DEPARTMENT').as('d')
+                .project('product_id', 'product_name', 'category', 'department')
+                .by(select('p').values('product_id'))
+                .by(select('p').values('name'))
+                .by(select('c').values('name'))
+                .by(select('d').values('name'))"""
+            results = self.submit_query(query)
+            return results[0] if results else {}
         except Exception as e:
-            # StopIteration if next() fails
+            logger.error(f"Gremlin get product hierarchy error: {e}")
             return {}
 
     def get_location_hierarchy(self, store_id: str) -> Dict[str, Any]:
@@ -185,10 +214,20 @@ class GremlinConnection:
             return {}
             
         try:
-            result = self.g.V().has('Store', 'store_id', store_id).as_('s').out('IN_MARKET').as_('m').out('IN_STATE').as_('st').out('IN_REGION').as_('r').project('store_id', 'store_name', 'market', 'state', 'region').by(__.select('s').values('store_id')).by(__.select('s').values('name')).by(__.select('m').values('name')).by(__.select('st').values('name')).by(__.select('r').values('name')).next()
-            
-            return result
+            query = f"""g.V().has('Store', 'id', '{store_id}').as('s')
+                .out('IN_MARKET').as('m')
+                .out('IN_STATE').as('st')
+                .out('IN_REGION').as('r')
+                .project('store_id', 'store_name', 'market', 'state', 'region')
+                .by(select('s').values('id'))
+                .by(select('s').values('name'))
+                .by(select('m').values('name'))
+                .by(select('st').values('name'))
+                .by(select('r').values('name'))"""
+            results = self.submit_query(query)
+            return results[0] if results else {}
         except Exception as e:
+            logger.error(f"Gremlin get location hierarchy error: {e}")
             return {}
 
 # Global Gremlin instance

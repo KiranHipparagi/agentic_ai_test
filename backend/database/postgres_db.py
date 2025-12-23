@@ -5,15 +5,34 @@ from contextlib import contextmanager
 from core.config import settings
 from core.logger import logger
 import sqlalchemy
+from urllib.parse import quote_plus
+import asyncio
+import aiohttp 
+# Fix the DATABASE_URL construction for Azure PostgreSQL
+def build_database_url():
+    """Build properly formatted PostgreSQL connection string"""
+    user = getattr(settings, 'POSTGRES_USER', '')
+    password = getattr(settings, 'POSTGRES_PASSWORD', '')
+    host = getattr(settings, 'POSTGRES_SERVER', '')
+    port = getattr(settings, 'POSTGRES_PORT', 5432)
+    database = getattr(settings, 'POSTGRES_DB', '')
+    
+    # Clean up any malformed host values
+    if '@' in host and not host.startswith('postgresql://'):
+        host = host.split('@')[-1]
+    
+    return f"postgresql://{user}:{quote_plus(password)}@{host}:{port}/{database}"
 
 # SQLAlchemy setup for PostgreSQL
+DATABASE_URL = build_database_url()
+
 engine = create_engine(
-    settings.DATABASE_URL,
+    DATABASE_URL,
     pool_size=20,
     max_overflow=40,
     pool_pre_ping=True,
     pool_recycle=3600,
-    echo=settings.DEBUG
+    echo=getattr(settings, 'DEBUG', False)
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -192,7 +211,7 @@ def init_db():
         with engine.connect() as conn:
             conn.execute(sqlalchemy.text("SELECT 1"))
         logger.info("✅ PostgreSQL database connection established")
-        logger.info(f"📊 Connected to: {settings.POSTGRES_DB} at {settings.POSTGRES_SERVER}")
+        logger.info(f"📊 Connected to: {getattr(settings, 'POSTGRES_DB', 'unknown')} at {getattr(settings, 'POSTGRES_SERVER', 'unknown')}")
     except Exception as e:
         logger.error(f"❌ Failed to connect to PostgreSQL: {e}")
         raise

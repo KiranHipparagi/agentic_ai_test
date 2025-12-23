@@ -1,13 +1,5 @@
 """
 Build Planalytics Knowledge Graph in Azure Cosmos DB (Gremlin API)
-ASYNC VERSION - 10-50x FASTER with batch processing and parallel execution
-
-Optimizations:
-1. Batch queries (combine multiple operations)
-2. Deduplication before upload
-3. Progress tracking with visual feedback
-4. Retry logic with exponential backoff
-5. Sample data option for testing
 """
 import os
 import sys

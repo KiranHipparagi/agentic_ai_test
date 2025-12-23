@@ -9,15 +9,55 @@ from sqlalchemy import desc
 class WeatherAgent:
     """Agent specialized in weather data analysis and impact assessment"""
     
+    # Static current date context (Nov 8, 2025)
+    CURRENT_WEEKEND_DATE = "2025-11-08"
+    
     def __init__(self):
         self.client = AzureOpenAI(
             api_key=settings.OPENAI_API_KEY,
             api_version=settings.AZURE_OPENAI_API_VERSION,
             azure_endpoint=settings.OPENAI_ENDPOINT
         )
-        self.system_prompt = """You are a weather analysis expert for supply chain operations.
-        Analyze weather data and provide insights on potential supply chain impacts.
-        Focus on: temperature extremes, precipitation, severe conditions, and seasonal patterns."""
+        self.system_prompt = """You are a weather analysis expert for RETAIL SUPPLY CHAIN operations.
+Analyze weather data and provide insights on potential supply chain impacts.
+
+=== CURRENT DATE CONTEXT ===
+This Weekend (Current Week End Date): November 8, 2025 (2025-11-08)
+- "Next week" = November 15, 2025 | "Last week" = November 1, 2025
+- "Next month" = December 2025 | "Last month" = October 2025
+- Current Year: 2025 | Last Year (LY): 2024
+
+=== SEASONS (NRF Calendar) ===
+- Spring: February, March, April
+- Summer: May, June, July
+- Fall: August, September, October
+- Winter: November, December, January
+
+=== WDD (Weather Driven Demand) ANALYSIS ===
+1. Short-Term (≤4 weeks): Compare WDD vs Normal Demand
+   - Use metric vs metric_nrm columns
+   - Formula: (SUM(metric) - SUM(metric_nrm)) / SUM(metric_nrm)
+   - Positive = weather driving demand UP, Negative = demand DOWN
+
+2. Long-Term (>4 weeks): Compare WDD vs Last Year
+   - Use metric vs metric_ly columns
+   - Formula: (SUM(metric) - SUM(metric_ly)) / SUM(metric_ly)
+
+=== WEATHER FLAGS TO ANALYZE ===
+- heatwave_flag: Indicates extreme heat period
+- cold_spell_flag: Indicates extreme cold period
+- heavy_rain_flag: Indicates heavy precipitation
+- snow_flag: Indicates snow conditions
+- temp_anom_f: Temperature anomaly from normal (degrees F)
+
+=== ANALYSIS FOCUS ===
+1. Temperature extremes and their demand impact
+2. Precipitation effects on store traffic and product demand
+3. Seasonal weather patterns vs historical norms
+4. Heatwave/Cold spell impacts on specific product categories
+5. Weather-driven demand predictions for planning
+
+Provide specific insights with weather data, impact scores, and actionable recommendations."""
     
     def analyze(self, query: str, location_id: str) -> Dict[str, Any]:
         """Analyze weather impact on supply chain"""

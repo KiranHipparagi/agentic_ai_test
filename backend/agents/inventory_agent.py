@@ -10,20 +10,57 @@ from datetime import datetime, timedelta
 class InventoryAgent:
     """Agent specialized in inventory analysis: batch tracking, spoilage, sales transactions, and stock movements"""
     
+    # Static current date context (Nov 8, 2025)
+    CURRENT_WEEKEND_DATE = "2025-11-08"
+    
     def __init__(self):
         self.client = AzureOpenAI(
             api_key=settings.OPENAI_API_KEY,
             api_version=settings.AZURE_OPENAI_API_VERSION,
             azure_endpoint=settings.OPENAI_ENDPOINT
         )
-        self.system_prompt = """You are an inventory management expert specializing in:
-        1. Batch expiry tracking for perishable goods
-        2. Spoilage analysis and waste reduction
-        3. Sales transaction analysis
-        4. Stock movement tracking (transfers, adjustments, returns)
-        5. Inventory optimization for perishable products
-        
-        Provide actionable insights with specific numbers, dates, and recommendations."""
+        self.system_prompt = """You are an inventory management expert for RETAIL SUPPLY CHAIN operations.
+
+=== CURRENT DATE CONTEXT ===
+This Weekend (Current Week End Date): November 8, 2025 (2025-11-08)
+- "Next week" = November 15, 2025 | "Last week" = November 1, 2025
+- "Next month" = December 2025 | "Last month" = October 2025
+- Current Year: 2025 | Last Year (LY): 2024
+
+=== YOUR SPECIALIZATIONS ===
+1. BATCH EXPIRY TRACKING
+   - Monitor batches expiring within next 7/14/30 days
+   - Track shelf life for perishable goods
+   - Identify products at risk of waste due to expiry
+   
+2. SPOILAGE ANALYSIS
+   - Analyze spoilage patterns by product, store, and reason
+   - Calculate spoilage rates and financial impact
+   - Identify root causes: temperature, handling, shelf life issues
+   - Recommend waste reduction strategies
+   
+3. SALES TRANSACTION ANALYSIS
+   - Analyze sales velocity by batch
+   - Track revenue and units sold per product/store
+   - Identify slow-moving vs fast-moving inventory
+   
+4. STOCK MOVEMENT TRACKING
+   - Monitor transfers, adjustments, and returns
+   - Track opening/closing balances weekly
+   - Identify discrepancies and reconciliation needs
+   
+5. INVENTORY OPTIMIZATION
+   - For perishable products especially
+   - Balance stock levels vs expiry risk
+   - Recommend reorder points based on velocity
+
+=== KEY DATASETS ===
+- Sales: Transactional sales data (units sold, revenue, discounts)
+- Batches: Batch records (expiry dates, quantities, lifecycle)
+- Batch Stock Tracking: Weekly stock movements (inflows, balances)
+- Spoilage Report: Waste tracking (quantities, reasons, percentages)
+
+Provide actionable insights with specific numbers, dates, and recommendations."""
     
     def analyze(self, query: str, product_id: str = None, location_id: str = None) -> Dict[str, Any]:
         """Main analysis dispatcher - routes to specific analysis based on query type"""
@@ -59,8 +96,8 @@ class InventoryAgent:
         """Analyze batches expiring soon"""
         try:
             with get_db() as db:
-                # Get batches expiring in next 7 days
-                today = datetime.now().date()
+                # Use static current date (Nov 8, 2025) instead of datetime.now()
+                today = datetime(2025, 11, 8).date()
                 expiry_window = today + timedelta(days=7)
                 
                 query_filter = and_(
@@ -138,8 +175,8 @@ class InventoryAgent:
         """Analyze spoilage patterns and waste"""
         try:
             with get_db() as db:
-                # Get recent spoilage reports (last 30 days)
-                cutoff_date = datetime.now().date() - timedelta(days=30)
+                # Use static current date (Nov 8, 2025) - get last 30 days
+                cutoff_date = datetime(2025, 11, 8).date() - timedelta(days=30)
                 
                 query_filter = SpoilageReport.report_date >= cutoff_date
                 
@@ -229,8 +266,8 @@ class InventoryAgent:
         """Analyze sales transactions by batch"""
         try:
             with get_db() as db:
-                # Get recent sales (last 30 days)
-                cutoff_date = datetime.now().date() - timedelta(days=30)
+                # Use static current date (Nov 8, 2025) - get last 30 days
+                cutoff_date = datetime(2025, 11, 8).date() - timedelta(days=30)
                 
                 query_filter = Sales.sale_date >= cutoff_date
                 
@@ -313,8 +350,8 @@ class InventoryAgent:
         """Track inventory movements (transfers, adjustments, spoilage)"""
         try:
             with get_db() as db:
-                # Get recent movements (last 30 days)
-                cutoff_date = datetime.now().date() - timedelta(days=30)
+                # Use static current date (Nov 8, 2025) - get last 30 days
+                cutoff_date = datetime(2025, 11, 8).date() - timedelta(days=30)
                 
                 query_filter = BatchStockTracking.transaction_date >= cutoff_date
                 

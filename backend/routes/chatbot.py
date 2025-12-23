@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
-from agents.orchestrator_agent import enhanced_orchestrator 
+from agents.orchestrator_agent import orchestrator 
 from core.logger import logger
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chatbot"])
@@ -28,7 +28,7 @@ class ChatResponse(BaseModel):
 
 @router.post("/", response_model=ChatResponse)
 async def chat(request: ChatRequest):
-    """Main chatbot endpoint with enhanced chart generation"""
+    """Main chatbot endpoint with chart generation"""
     try:
         logger.info(f"💬 Chat request: {request.query[:100]}...")
         
@@ -39,8 +39,8 @@ async def chat(request: ChatRequest):
             "session_id": request.session_id
         }
         
-        # Use Enhanced Orchestrator
-        result = await enhanced_orchestrator.orchestrate(request.query, context)
+        # Use Orchestrator
+        result = await orchestrator.orchestrate(request.query, context)
         
         # Debug logging
         visualization = result.get("visualization")
@@ -87,6 +87,6 @@ async def get_stats():
     """Get orchestrator statistics"""
     return {
         "message": "Statistics available",
-        "orchestrator": "Enhanced LangGraph Orchestrator",
+        "orchestrator": "LangGraph Orchestrator",
         "features": ["Intent Detection", "Smart Chart Generation", "Natural Conversations"]
     }

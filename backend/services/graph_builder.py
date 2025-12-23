@@ -1,18 +1,18 @@
 from typing import Dict, Any
-from database.gremlin_db import gremlin_conn
+from database.neo4j_db import neo4j_conn
 from database.postgres_db import get_db, Metrics, WeatherData, EventsData
 from core.logger import logger
 from sqlalchemy import func
 
 
 class GraphBuilderService:
-    """Service for building knowledge graphs in Gremlin/Cosmos DB"""
+    """Service for building knowledge graphs in Neo4j"""
     
     def build_supply_chain_graph(self, product_id: str, location_id: str) -> bool:
         """Build complete supply chain graph for product-location pair"""
         try:
-            if not gremlin_conn.ensure_connected():
-                logger.warning("Gremlin unavailable - skipping graph building")
+            if not neo4j_conn.ensure_connected():
+                logger.warning("Neo4j unavailable - skipping graph building")
                 return False
                 
             with get_db() as db:

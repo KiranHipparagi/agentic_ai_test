@@ -13,7 +13,7 @@ import time
 from core.config import settings
 from core.logger import logger
 from database.postgres_db import init_db 
-from routes import chatbot, analytics, reports
+from routes import chatbot
 
 
 @asynccontextmanager
@@ -87,8 +87,6 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Include routers
 app.include_router(chatbot.router)
-app.include_router(analytics.router)
-app.include_router(reports.router)
 
 
 @app.get("/")

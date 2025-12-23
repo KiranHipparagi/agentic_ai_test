@@ -1,9 +1,8 @@
 """
 Setup Planalytics Database Tables and Load Data from CSV
 This script:
-1. Creates tables for all 7 CSV files (excluding insert_at, updated_at columns)
+1. Creates tables for all 7 CSV files 
 2. Loads data from CSV files into PostgreSQL
-3. Creates proper indexes for query performance
 """
 import os
 import psycopg2
@@ -315,8 +314,7 @@ def main():
         print("="*80)
         print("\n📝 Next steps:")
         print("   1. Run Azure AI Search indexing scripts")
-        print("   2. Run Neo4j knowledge graph builder")
-        print("   3. Run Gremlin knowledge graph builder")
+        print("   2. Run Gremlin knowledge graph builder")
         print()
         
     except Exception as e:
